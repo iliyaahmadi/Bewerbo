@@ -164,18 +164,25 @@
         <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="Padding" Value="11,9" />
+        <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ComboBoxItem">
-                    <Border x:Name="ItemBox" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}" Margin="2">
-                        <ContentPresenter ContentSource="Content" />
-                    </Border>
+                    <Grid Margin="2">
+                        <Border x:Name="ItemBox" Background="{TemplateBinding Background}" CornerRadius="6" />
+                        <!-- Hover tint on top, so a hovered item stands out from the list and from the selected item. -->
+                        <Border x:Name="HoverTint" Background="{TemplateBinding Foreground}" CornerRadius="6" Opacity="0" IsHitTestVisible="False" />
+                        <ContentPresenter Margin="{TemplateBinding Padding}" ContentSource="Content" />
+                    </Grid>
                     <ControlTemplate.Triggers>
-                        <Trigger Property="IsHighlighted" Value="True">
-                            <Setter TargetName="ItemBox" Property="Background" Value="{DynamicResource ControlBrush}" />
-                        </Trigger>
                         <Trigger Property="IsSelected" Value="True">
                             <Setter TargetName="ItemBox" Property="Background" Value="{DynamicResource ControlHoverBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="HoverTint" Property="Opacity" Value="0.09" />
+                        </Trigger>
+                        <Trigger Property="IsHighlighted" Value="True">
+                            <Setter TargetName="HoverTint" Property="Opacity" Value="0.09" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -244,7 +251,7 @@
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="ComboBoxBorder" Property="BorderBrush" Value="{DynamicResource ControlHoverBorderBrush}" />
-                            <Setter TargetName="HoverOverlay" Property="Opacity" Value="0.07" />
+                            <Setter TargetName="HoverOverlay" Property="Opacity" Value="0.1" />
                         </Trigger>
                         <Trigger Property="IsDropDownOpen" Value="True">
                             <Setter TargetName="ComboBoxBorder" Property="BorderBrush" Value="{DynamicResource AccentLightBrush}" />
