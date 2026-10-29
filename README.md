@@ -15,15 +15,14 @@ computer in a single JSON file. There is no account and no server.
 - **Your own types.** Give each application any type you like, such as Job, Ausbildung, Internship or
   Werkstudent. The sidebar lists every type with a count.
 - **Overview.** Open applications per type, plus interviews, offers, follow-ups that are due, and rejections.
-- **Search, filter and sort** by type, status, position, company, notes or location. Positions are grouped
-  with a count for each, so you can see how many went out for every role.
-- **Documents.** Point Bewerbo at the folder where you keep one subfolder per company (for example
-  `Documents\Applications\Siemens`). Add your cover letter and CV for each application right in the form, or drop
-  files on its card. Each card shows which documents of your checklist are in the folder (cover letter, CV and
-  certificates by default; add your own in Settings) and opens the folder with one click. New folders start with
-  a copy of your standard documents, minus the ones you brought yourself. **Import from folders** turns company
-  folders you already have into applications. Bewerbo only creates folders and copies files in; it never deletes,
-  moves or overwrites anything.
+- **Search, filter and sort** by type, status, company, notes or location. **Filters** narrows the list to one
+  position, with a count for each, so you can see how many went out for every role.
+- **Files.** Point Bewerbo at the folder where you keep one subfolder per company (for example
+  `Documents\Applications\Siemens`). Each card has a Files button to see, open, add and remove that
+  application's files, and you can drop files on a card. When you add an application, the form lists the files
+  it will start with: your standard documents plus anything you add, such as this company's cover letter and CV.
+  Removed files go to the Recycle Bin. **Import from folders** turns company folders you already have into
+  applications.
 - **Paste details.** Copy a block like the one below and press `Ctrl+V` in the main window, or use
   **Paste details** in the form, and Bewerbo fills everything in. When the form opens with such a block on the
   clipboard, it offers to fill it in. **Copy prompt** in the form copies a short prompt for a chat assistant so

@@ -11,7 +11,7 @@ public interface ICardActions
 
     void OpenLink(JobApplication application);
 
-    void OpenFolder(JobApplication application);
+    void ShowFiles(JobApplication application);
 
     void AddFiles(JobApplication application, IReadOnlyList<string> files);
 }

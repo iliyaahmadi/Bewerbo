@@ -1,4 +1,3 @@
-using System.IO;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -15,9 +14,11 @@ public sealed class ApplicationCardViewModel : ObservableObject
     private ImageSource? _icon;
 
     /// <param name="tagColor">Colour slot 0 to 3 for the type tag.</param>
-    public ApplicationCardViewModel(JobApplication application, DateOnly today, FaviconCache favicons, DocumentLibrary? library, ICardActions actions, int tagColor = 0)
+    /// <param name="folder">The company folder's files, or null when no documents folder is set up.</param>
+    public ApplicationCardViewModel(JobApplication application, DateOnly today, FaviconCache favicons, FolderState? folder, ICardActions actions, int tagColor = 0)
     {
         TagColor = tagColor;
+        Folder = folder;
         Application = application;
         _actions = actions;
         _status = application.Status;
@@ -25,19 +26,19 @@ public sealed class ApplicationCardViewModel : ObservableObject
         Details = BuildDetails(application, IsFollowUpDue);
         EditCommand = new RelayCommand(() => actions.Edit(application));
         OpenLinkCommand = new RelayCommand(() => actions.OpenLink(application));
-        OpenFolderCommand = new RelayCommand(() => actions.OpenFolder(application));
+        FilesCommand = new RelayCommand(() => actions.ShowFiles(application));
 
-        if (library is not null)
+        if (folder is not null)
         {
-            ShowDocuments = true;
-            var folder = library.FolderFor(application);
-            HasFolder = Directory.Exists(folder);
-            var files = DocumentLibrary.List(folder);
-            Documents = library.Check(files).Select(check => new DocumentStatus(check.Item.Name, check.IsPresent)).ToList();
-            FileCountText = !HasFolder ? "No folder yet" : files.Count == 1 ? "1 file" : $"{files.Count} files";
-            FilesToolTip = files.Count > 0
-                ? string.Join("\n", files.Select(f => f.Name))
-                : "Drop files on this card to copy them into the company folder.";
+            FilesText = folder.Files.Count switch
+            {
+                0 => "No files",
+                1 => "1 file",
+                var count => $"{count} files",
+            };
+            FilesToolTip = folder.Files.Count > 0
+                ? string.Join("\n", folder.Files.Select(f => f.Name)) + "\n\nClick to open, add or remove files."
+                : "Click to add files, or drop them on this card.";
         }
 
         if (WebLink.Host(application.Link) is { } host)
@@ -79,14 +80,11 @@ public sealed class ApplicationCardViewModel : ObservableObject
 
     public bool HasLink => Application.Link.Length > 0;
 
-    public bool ShowDocuments { get; }
+    public FolderState? Folder { get; }
 
-    public bool HasFolder { get; }
+    public bool ShowFiles => Folder is not null;
 
-    /// <summary>Which documents of the user's checklist are in the company folder.</summary>
-    public IReadOnlyList<DocumentStatus> Documents { get; } = [];
-
-    public string FileCountText { get; } = "";
+    public string FilesText { get; } = "";
 
     public string FilesToolTip { get; } = "";
 
@@ -96,7 +94,7 @@ public sealed class ApplicationCardViewModel : ObservableObject
 
     public ICommand OpenLinkCommand { get; }
 
-    public ICommand OpenFolderCommand { get; }
+    public ICommand FilesCommand { get; }
 
     public ImageSource? Icon
     {
@@ -135,6 +133,12 @@ public sealed class ApplicationCardViewModel : ObservableObject
 
     public void AddFiles(IReadOnlyList<string> files) => _actions.AddFiles(Application, files);
 
+    /// <summary>True when this card already shows exactly this state, so it can be kept as it is.</summary>
+    public bool Shows(JobApplication application, int tagColor, FolderState? folder) =>
+        ReferenceEquals(Application, application)
+        && TagColor == tagColor
+        && (Folder is null ? folder is null : folder is not null && Folder.Exists == folder.Exists && Folder.Files.SequenceEqual(folder.Files));
+
     private async Task LoadIconAsync(FaviconCache favicons, string host) =>
         Icon = await favicons.GetAsync(host);
 
@@ -151,9 +155,5 @@ public sealed class ApplicationCardViewModel : ObservableObject
     }
 }
 
-public sealed record DocumentStatus(string Label, bool IsPresent)
-{
-    public string Text => IsPresent ? "✓ " + Label : Label;
-
-    public string ToolTip => IsPresent ? $"{Label}: in the folder" : $"{Label}: not in the folder yet";
-}
+/// <summary>A company folder as last read from disk.</summary>
+public sealed record FolderState(bool Exists, IReadOnlyList<DocumentFile> Files);

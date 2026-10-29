@@ -130,34 +130,6 @@
                         <TextBlock Text="{Binding NotesPreview}" ToolTip="{Binding Notes}" FontSize="12" Margin="0,11,0,0"
                                    Foreground="{DynamicResource TextMutedBrush}" TextTrimming="CharacterEllipsis"
                                    Visibility="{Binding HasNotes, Converter={StaticResource VisibleWhenTrue}}" />
-                        <WrapPanel Margin="0,12,0,0" Visibility="{Binding ShowDocuments, Converter={StaticResource VisibleWhenTrue}}">
-                            <ItemsControl ItemsSource="{Binding Documents}" Focusable="False">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <StackPanel Orientation="Horizontal" />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate DataType="{x:Type vm:DocumentStatus}">
-                                        <Border ToolTip="{Binding ToolTip}">
-                                            <Border.Style>
-                                                <Style TargetType="Border" BasedOn="{StaticResource DocumentChip}">
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsPresent}" Value="True">
-                                                            <Setter Property="BorderBrush" Value="{DynamicResource SuccessBrush}" />
-                                                            <Setter Property="TextElement.Foreground" Value="{DynamicResource SuccessBrush}" />
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Border.Style>
-                                            <TextBlock Text="{Binding Text}" />
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                            <TextBlock Text="{Binding FileCountText}" ToolTip="{Binding FilesToolTip}" FontSize="11" Margin="4,0,0,0"
-                                       Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
-                        </WrapPanel>
                     </StackPanel>
 
                     <StackPanel Grid.Column="2" HorizontalAlignment="Right">
@@ -165,9 +137,10 @@
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
                             <Button Style="{StaticResource GhostButton}" Content="Open link ↗" Command="{Binding OpenLinkCommand}"
                                     FontSize="11" Padding="6,5" Visibility="{Binding HasLink, Converter={StaticResource VisibleWhenTrue}}" />
-                            <Button Style="{StaticResource GhostButton}" Content="Folder" Command="{Binding OpenFolderCommand}"
-                                    ToolTip="Open the company folder. Bewerbo creates it if it doesn't exist yet."
-                                    FontSize="11" Padding="6,5" Margin="6,0,0,0" Visibility="{Binding ShowDocuments, Converter={StaticResource VisibleWhenTrue}}" />
+                            <Button Style="{StaticResource GhostButton}" Command="{Binding FilesCommand}" ToolTip="{Binding FilesToolTip}"
+                                    FontSize="11" Padding="6,5" Margin="6,0,0,0" Visibility="{Binding ShowFiles, Converter={StaticResource VisibleWhenTrue}}">
+                                <TextBlock><Run Text="📄" FontFamily="Segoe UI Emoji" /><Run Text=" " /><Run Text="{Binding FilesText, Mode=OneWay}" /></TextBlock>
+                            </Button>
                             <Button Content="Edit" Command="{Binding EditCommand}" FontSize="11" Padding="10,5" Margin="6,0,0,0" />
                         </StackPanel>
                     </StackPanel>
@@ -341,54 +314,78 @@
             </Grid>
 
             <StackPanel Grid.Row="2">
-                <Grid Margin="0,15,0,5">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="70" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-                    <TextBlock Text="STATUS" Style="{StaticResource SectionLabel}" Margin="0,9,0,0" />
-                    <ItemsControl Grid.Column="1" ItemsSource="{Binding StatusFilters}" ItemTemplate="{StaticResource StatusFilterTemplate}" Focusable="False">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                    </ItemsControl>
-                    <TextBlock Grid.Row="1" Text="POSITION" Style="{StaticResource SectionLabel}" Margin="0,9,0,0"
-                               Visibility="{Binding HasPositionFilters, Converter={StaticResource VisibleWhenTrue}}" />
-                    <ItemsControl Grid.Row="1" Grid.Column="1" ItemsSource="{Binding PositionFilters}" ItemTemplate="{StaticResource StatusFilterTemplate}"
-                                  Focusable="False" Visibility="{Binding HasPositionFilters, Converter={StaticResource VisibleWhenTrue}}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                    </ItemsControl>
-                </Grid>
+                <ItemsControl ItemsSource="{Binding StatusFilters}" ItemTemplate="{StaticResource StatusFilterTemplate}" Margin="0,15,0,5" Focusable="False">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                </ItemsControl>
                 <Grid Margin="0,0,0,16">
                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="12" />
                         <ColumnDefinition Width="200" />
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="APPLICATIONS" Style="{StaticResource SectionLabel}" VerticalAlignment="Center" />
-                    <Button Grid.Column="1" Content="Clear filters" Command="{Binding ClearFiltersCommand}" Style="{StaticResource GhostButton}"
-                            FontSize="11" Padding="10,7" />
-                    <ComboBox Grid.Column="3" ItemsSource="{Binding SortOptions}" SelectedItem="{Binding Sort}" DisplayMemberPath="Label"
+
+                    <!-- The position picked in Filters, with a quick way to drop it. -->
+                    <Border Grid.Column="1" HorizontalAlignment="Left" Margin="12,0,12,0" CornerRadius="6" Padding="10,0,2,0"
+                            Background="{DynamicResource ControlHoverBrush}" BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1"
+                            Visibility="{Binding HasActivePosition, Converter={StaticResource VisibleWhenTrue}}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding ActivePosition}" ToolTip="{Binding ActivePosition}" FontSize="11" MaxWidth="260"
+                                       TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                            <Button Content="✕" Command="{Binding ClearPositionCommand}" ToolTip="Show all positions" Style="{StaticResource GhostButton}"
+                                    FontSize="10" FontWeight="Normal" Padding="7,5" Margin="4,0,0,0" />
+                        </StackPanel>
+                    </Border>
+
+                    <ToggleButton x:Name="FiltersButton" Grid.Column="2" Style="{StaticResource FilterToggle}" Content="{Binding FiltersLabel}"
+                                  IsChecked="{Binding IsFiltersOpen, Mode=TwoWay}" IsEnabled="{Binding HasPositions}"
+                                  ToolTip="Filter by position" />
+                    <Popup Grid.Column="2" PlacementTarget="{Binding ElementName=FiltersButton}" Placement="Bottom" StaysOpen="False"
+                           IsOpen="{Binding IsFiltersOpen, Mode=TwoWay}" AllowsTransparency="True" PopupAnimation="None">
+                        <Border Width="340" Margin="0,6,0,0" Padding="8" CornerRadius="10" Background="{DynamicResource ControlBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock Text="POSITION" Style="{StaticResource SectionLabel}" Margin="10,6,0,8" />
+                                <ScrollViewer MaxHeight="380" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                    <ItemsControl ItemsSource="{Binding PositionFilters}" ItemTemplate="{StaticResource NavItemTemplate}" Focusable="False" />
+                                </ScrollViewer>
+                            </StackPanel>
+                        </Border>
+                    </Popup>
+
+                    <Button Grid.Column="3" Content="Clear filters" Command="{Binding ClearFiltersCommand}" Style="{StaticResource GhostButton}"
+                            FontSize="11" Padding="10,7" Margin="6,0,0,0" />
+                    <ComboBox Grid.Column="5" ItemsSource="{Binding SortOptions}" SelectedItem="{Binding Sort}" DisplayMemberPath="Label"
                               MinHeight="34" FontSize="12" />
                 </Grid>
             </StackPanel>
 
             <Grid Grid.Row="3">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,8,0"
+                <!-- Virtualized, so only the cards on screen are created. -->
+                <ItemsControl ItemsSource="{Binding Cards}" ItemTemplate="{StaticResource CardTemplate}" Focusable="False"
+                              VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.ScrollUnit="Pixel" ScrollViewer.CanContentScroll="True"
                               Visibility="{Binding HasResults, Converter={StaticResource VisibleWhenTrue}}">
-                    <ItemsControl ItemsSource="{Binding Cards}" ItemTemplate="{StaticResource CardTemplate}" Focusable="False" />
-                </ScrollViewer>
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <VirtualizingStackPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.Template>
+                        <ControlTemplate TargetType="ItemsControl">
+                            <ScrollViewer CanContentScroll="True" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                                          Padding="0,0,8,0" Focusable="False">
+                                <ItemsPresenter />
+                            </ScrollViewer>
+                        </ControlTemplate>
+                    </ItemsControl.Template>
+                </ItemsControl>
 
                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="20"
                             Visibility="{Binding ShowEmptyState, Converter={StaticResource VisibleWhenTrue}}">

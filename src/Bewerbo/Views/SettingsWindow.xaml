@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=vm:SettingsViewModel}"
         Title="Settings"
-        Width="620" Height="820" MinWidth="520" MinHeight="500"
+        Width="620" Height="660" MinWidth="520" MinHeight="480"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
         Background="{DynamicResource SidebarBrush}"
         Foreground="{DynamicResource TextBrush}"
@@ -68,20 +68,6 @@
                            Style="{StaticResource HintText}" TextWrapping="Wrap" />
 
                 <CheckBox Content="Create a company folder when I add an application" IsChecked="{Binding CreateFolderForNewApplications}" Margin="0,20,0,0" />
-
-                <Grid Margin="0,20,0,6">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Text="Document checklist" Foreground="{DynamicResource TextBodyBrush}" VerticalAlignment="Bottom" />
-                    <Button Grid.Column="1" Content="Reset" Command="{Binding ResetChecklistCommand}" Style="{StaticResource GhostButton}"
-                            FontSize="11" Padding="8,4" ToolTip="Go back to cover letter, CV and certificates" />
-                </Grid>
-                <TextBox Text="{Binding ChecklistText, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap"
-                         Height="120" VerticalContentAlignment="Top" VerticalScrollBarVisibility="Auto" FontSize="13" />
-                <TextBlock Style="{StaticResource HintText}" TextWrapping="Wrap"
-                           Text="One document per line, as Name: words in the file name. Each card shows ✓ for a document when a file in the company folder contains one of its words. Add your own, for example “Portfolio: portfolio, arbeitsproben”." />
             </StackPanel>
         </ScrollViewer>
 

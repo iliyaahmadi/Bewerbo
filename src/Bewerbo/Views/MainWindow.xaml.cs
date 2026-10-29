@@ -12,6 +12,9 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         ThemeManager.Attach(this);
+
+        // Files may have been added or removed in Explorer while the app was in the background.
+        Activated += (_, _) => (DataContext as MainViewModel)?.RefreshFiles();
     }
 
     protected override void OnPreviewKeyDown(KeyEventArgs e)

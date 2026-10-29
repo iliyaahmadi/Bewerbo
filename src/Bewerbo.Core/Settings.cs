@@ -1,5 +1,4 @@
 using System.Text.Json.Serialization;
-using Bewerbo.Core.Documents;
 
 namespace Bewerbo.Core;
 
@@ -22,16 +21,8 @@ public sealed class Settings
 
     public bool CreateFolderForNewApplications { get; set; } = true;
 
-    /// <summary>The documents each card checks the company folder for.</summary>
-    public List<ChecklistItem> Checklist { get; set; } = [.. DocumentChecklist.Default];
-
     [JsonIgnore]
     public bool HasDocumentsFolder => DocumentsFolder.Length > 0;
 
-    public Settings Clone()
-    {
-        var copy = (Settings)MemberwiseClone();
-        copy.Checklist = [.. Checklist];
-        return copy;
-    }
+    public Settings Clone() => (Settings)MemberwiseClone();
 }

@@ -10,6 +10,8 @@ public interface IDialogService
 
     void ShowFolderImport(FolderImportViewModel import);
 
+    void ShowFiles(FilesViewModel files);
+
     bool Confirm(string message, string title);
 
     void ShowInfo(string message, string title);
@@ -27,4 +29,7 @@ public interface IDialogService
     void OpenLink(string link);
 
     void OpenPath(string path);
+
+    /// <returns>False when the file could not be moved; the user has been told why.</returns>
+    bool MoveToRecycleBin(string path);
 }

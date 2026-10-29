@@ -27,6 +27,10 @@ public sealed class MainViewModel : ObservableObject, ICardActions
     private bool _hasResults;
     private Settings _settings;
     private DocumentLibrary? _library;
+    private bool _isFiltersOpen;
+
+    // Folder listings for the cards, so filtering and sorting never touch the disk.
+    private readonly Dictionary<string, FolderState> _folders = new(StringComparer.OrdinalIgnoreCase);
 
     public MainViewModel(ApplicationStore store, SettingsStore settingsStore, FaviconCache favicons, IDialogService dialogs, Action<AppTheme> applyTheme)
     {
@@ -48,6 +52,7 @@ public sealed class MainViewModel : ObservableObject, ICardActions
         ClearFiltersCommand = new RelayCommand(ClearFilters);
         SettingsCommand = new RelayCommand(OpenSettings);
         ImportFoldersCommand = new RelayCommand(ImportFolders);
+        ClearPositionCommand = new RelayCommand(() => SelectPosition(null));
 
         Refresh();
     }
@@ -81,6 +86,24 @@ public sealed class MainViewModel : ObservableObject, ICardActions
     public RelayCommand SettingsCommand { get; }
 
     public RelayCommand ImportFoldersCommand { get; }
+
+    public RelayCommand ClearPositionCommand { get; }
+
+    /// <summary>Whether the Filters popup is open.</summary>
+    public bool IsFiltersOpen
+    {
+        get => _isFiltersOpen;
+        set => SetProperty(ref _isFiltersOpen, value);
+    }
+
+    public bool HasPositions => PositionFilters.Count > 1;
+
+    /// <summary>The position picked in the Filters popup, or null.</summary>
+    public string? ActivePosition { get; private set; }
+
+    public bool HasActivePosition => ActivePosition is not null;
+
+    public string FiltersLabel => HasActivePosition ? "Filters · 1" : "Filters";
 
     public Settings Settings => _settings.Clone();
 
@@ -151,8 +174,6 @@ public sealed class MainViewModel : ObservableObject, ICardActions
 
     private static DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
 
-    public bool HasPositionFilters => PositionFilters.Count > 2;
-
     private void Refresh()
     {
         Summary = ApplicationSummary.From(_applications, Today);
@@ -172,8 +193,12 @@ public sealed class MainViewModel : ObservableObject, ICardActions
 
         Replace(PositionFilters,
             positions.Select(group => new NavItem(group.Name, group.Count, group.Key == _positionKey, new RelayCommand(() => SelectPosition(group.Key))))
-                .Prepend(new NavItem("All", inType.Count, _positionKey is null, new RelayCommand(() => SelectPosition(null)))));
-        OnPropertyChanged(nameof(HasPositionFilters));
+                .Prepend(new NavItem("All positions", inType.Count, _positionKey is null, new RelayCommand(() => SelectPosition(null)))));
+        ActivePosition = positions.FirstOrDefault(g => g.Key == _positionKey)?.Name;
+        OnPropertyChanged(nameof(HasPositions));
+        OnPropertyChanged(nameof(ActivePosition));
+        OnPropertyChanged(nameof(HasActivePosition));
+        OnPropertyChanged(nameof(FiltersLabel));
 
         var inPosition = inType.Where(a => _positionKey is null || Core.Positions.Key(a.Position) == _positionKey).ToList();
         Replace(StatusFilters,
@@ -184,11 +209,7 @@ public sealed class MainViewModel : ObservableObject, ICardActions
                     status == _status,
                     new RelayCommand(() => SelectStatus(status)))));
 
-        var filter = new ApplicationFilter(_typeKey, _status, _positionKey, _search);
-        var today = Today;
-        var allTypes = types.Select(t => t.Name).ToList();
-        Replace(Cards, ApplicationQuery.Run(_applications, filter, _sort.Order)
-            .Select(a => new ApplicationCardViewModel(a, today, _favicons, _library, this, ApplicationTypes.ColorIndex(a.Type, allTypes))));
+        SyncCards(types);
 
         Title = positions.FirstOrDefault(g => g.Key == _positionKey)?.Name
             ?? types.FirstOrDefault(t => t.Key == _typeKey)?.Name
@@ -211,7 +232,61 @@ public sealed class MainViewModel : ObservableObject, ICardActions
     private void SelectPosition(string? key)
     {
         _positionKey = key;
+        IsFiltersOpen = false;
         Refresh();
+    }
+
+    /// <summary>
+    /// Updates the card list in place. Cards whose application, tag colour and files are unchanged are kept,
+    /// so the list does not jump back to the top or redraw every card after each change.
+    /// </summary>
+    private void SyncCards(List<LabelGroup> types)
+    {
+        var filter = new ApplicationFilter(_typeKey, _status, _positionKey, _search);
+        var allTypes = types.Select(t => t.Name).ToList();
+        var applications = ApplicationQuery.Run(_applications, filter, _sort.Order);
+
+        for (var i = 0; i < applications.Count; i++)
+        {
+            var application = applications[i];
+            var color = ApplicationTypes.ColorIndex(application.Type, allTypes);
+            var folder = FolderOf(application);
+            if (i < Cards.Count && Cards[i].Shows(application, color, folder))
+                continue;
+
+            var card = new ApplicationCardViewModel(application, Today, _favicons, folder, this, color);
+            if (i < Cards.Count)
+                Cards[i] = card;
+            else
+                Cards.Add(card);
+        }
+
+        while (Cards.Count > applications.Count)
+            Cards.RemoveAt(Cards.Count - 1);
+    }
+
+    private FolderState? FolderOf(JobApplication application)
+    {
+        if (_library is null)
+            return null;
+
+        var folder = _library.FolderFor(application);
+        if (!_folders.TryGetValue(folder, out var state))
+            _folders[folder] = state = new FolderState(Directory.Exists(folder), DocumentLibrary.List(folder));
+        return state;
+    }
+
+    /// <summary>Reads the company folders again, for when files may have changed outside the app.</summary>
+    public void RefreshFiles()
+    {
+        _folders.Clear();
+        SyncCards(ApplicationTypes.Group(_applications));
+    }
+
+    private void FilesChanged(string folder)
+    {
+        _folders.Remove(folder);
+        SyncCards(ApplicationTypes.Group(_applications));
     }
 
     private void SelectStatus(ApplicationStatus? status)
@@ -263,6 +338,18 @@ public sealed class MainViewModel : ObservableObject, ICardActions
             _dialogs.OpenPath(folder);
     }
 
+    public void ShowFiles(JobApplication application)
+    {
+        if (_library is null)
+        {
+            _dialogs.ShowInfo("Choose a documents folder in Settings first. Bewerbo then keeps one folder per company there.", "No documents folder");
+            return;
+        }
+
+        var documents = DocumentsViewModel.ForFolder(_library.FolderFor(application), new ApplicationFiles(this, application));
+        _dialogs.ShowFiles(new FilesViewModel(application.Company, application.Position, documents));
+    }
+
     public void AddFiles(JobApplication application, IReadOnlyList<string> files)
     {
         if (_library is null)
@@ -271,20 +358,20 @@ public sealed class MainViewModel : ObservableObject, ICardActions
             return;
         }
 
-        if (LinkFolder(application, files) is not { } folder)
+        if (LinkFolder(application) is not { } folder)
             return;
 
         try
         {
             var added = DocumentLibrary.AddFiles(folder, files);
-            Refresh();
             Footer = added.Count == 1 ? $"1 file copied to {application.Company}" : $"{added.Count} files copied to {application.Company}";
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             _dialogs.ShowError("The files could not be copied.\n\n" + ex.Message, "Unable to add files");
-            Refresh();
         }
+
+        FilesChanged(folder);
     }
 
     /// <summary>Opens the editor filled in from copied text, for Ctrl+V in the main window.</summary>
@@ -310,15 +397,16 @@ public sealed class MainViewModel : ObservableObject, ICardActions
     {
         var types = ApplicationTypes.Group(_applications);
         var type = types.FirstOrDefault(t => t.Key == _typeKey)?.Name ?? types.FirstOrDefault()?.Name ?? ApplicationTypes.Suggestions[0];
-        var documents = _library is null ? null : NewDocuments(null, null);
-        var note = _library is not null && _settings.CreateFolderForNewApplications
-            ? $"A folder for this company is created in {_library.Root} when you save."
-            : null;
+        var creates = _library is not null && _settings.CreateFolderForNewApplications;
+        var documents = _library is null
+            ? null
+            : DocumentsViewModel.ForNew(creates ? _library.StandardDocuments.Select(d => d.Path) : [], new NewApplicationFiles(_dialogs));
+        var note = creates ? $"A folder for this company is created in {_library!.Root} when you save." : null;
 
         return new EditorViewModel(
             ApplicationDraft.ForNew(type, Today),
             null,
-            application => SaveWithDocuments(application, documents?.PendingFiles ?? [], isNew: true),
+            application => SaveNew(application, documents?.PendingFiles ?? []),
             Delete,
             TypeSuggestions(types),
             documents,
@@ -327,11 +415,11 @@ public sealed class MainViewModel : ObservableObject, ICardActions
 
     public void Edit(JobApplication application)
     {
-        var documents = _library is null ? null : NewDocuments(_library.FolderFor(application), application);
+        var documents = _library is null ? null : DocumentsViewModel.ForFolder(_library.FolderFor(application), new ApplicationFiles(this, application));
         _dialogs.ShowEditor(new EditorViewModel(
             ApplicationDraft.From(application),
             application,
-            edited => SaveWithDocuments(edited, documents?.PendingFiles ?? [], isNew: false),
+            SaveEdited,
             Delete,
             TypeSuggestions(ApplicationTypes.Group(_applications)),
             documents));
@@ -340,38 +428,75 @@ public sealed class MainViewModel : ObservableObject, ICardActions
     private static IReadOnlyList<string> TypeSuggestions(List<LabelGroup> types) =>
         types.Count > 0 ? types.Select(t => t.Name).ToList() : ApplicationTypes.Suggestions;
 
-    private DocumentsViewModel NewDocuments(string? folder, JobApplication? application) => new(
-        folder,
-        () => _dialogs.PickFiles("Add documents"),
-        _dialogs.OpenPath,
-        () =>
-        {
-            if (application is not null)
-                OpenFolder(Current(application));
-        });
-
-    /// <summary>Saves the application and copies the files added in the editor into its folder.</summary>
-    private bool SaveWithDocuments(JobApplication application, IReadOnlyList<string> files, bool isNew)
+    /// <summary>Saves a new application and copies the files collected in the form into its folder.</summary>
+    private bool SaveNew(JobApplication application, IReadOnlyList<string> files)
     {
-        // The folder can be linked while the editor is open, which the editor's copy does not know about.
-        if (!isNew && application.Folder.Length == 0)
-            application.Folder = Current(application).Folder;
-
-        if (_library is not null && (files.Count > 0 || (isNew && _settings.CreateFolderForNewApplications)))
+        if (_library is not null && (files.Count > 0 || _settings.CreateFolderForNewApplications))
         {
+            var folder = _library.FolderFor(application);
             try
             {
-                var folder = _library.Prepare(_library.FolderFor(application), files);
-                application.Folder = folder;
                 DocumentLibrary.AddFiles(folder, files);
+                application.Folder = folder;
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
-                _dialogs.ShowError($"The application is saved, but its documents could not be copied.\n\n{ex.Message}", "Unable to copy documents");
+                _dialogs.ShowError($"The application is saved, but its files could not be copied.\n\n{ex.Message}", "Unable to copy files");
             }
+
+            _folders.Remove(folder);
         }
 
         return Upsert(application);
+    }
+
+    private bool SaveEdited(JobApplication application)
+    {
+        // The folder can be linked while the editor is open, which the editor's copy does not know about.
+        if (application.Folder.Length == 0)
+            application.Folder = Current(application).Folder;
+        return Upsert(application);
+    }
+
+    private bool RemoveFile(string path)
+    {
+        if (!_dialogs.Confirm($"Move {Path.GetFileName(path)} to the Recycle Bin?", "Remove file") || !_dialogs.MoveToRecycleBin(path))
+            return false;
+
+        FilesChanged(Path.GetDirectoryName(path)!);
+        return true;
+    }
+
+    /// <summary>File actions for an application that already exists: they act on its folder straight away.</summary>
+    private sealed class ApplicationFiles(MainViewModel main, JobApplication application) : IFileActions
+    {
+        public IReadOnlyList<string> PickFiles() => main._dialogs.PickFiles("Add files for " + application.Company);
+
+        public void Open(string path) => main._dialogs.OpenPath(path);
+
+        public void OpenFolder() => main.OpenFolder(main.Current(application));
+
+        public void AddFiles(IReadOnlyList<string> files) => main.AddFiles(main.Current(application), files);
+
+        public bool Remove(string path) => main.RemoveFile(path);
+    }
+
+    /// <summary>File actions for a new application, whose files are only collected until it is saved.</summary>
+    private sealed class NewApplicationFiles(IDialogService dialogs) : IFileActions
+    {
+        public IReadOnlyList<string> PickFiles() => dialogs.PickFiles("Add files");
+
+        public void Open(string path) => dialogs.OpenPath(path);
+
+        public void OpenFolder()
+        {
+        }
+
+        public void AddFiles(IReadOnlyList<string> files)
+        {
+        }
+
+        public bool Remove(string path) => false;
     }
 
     private JobApplication Current(JobApplication application) =>
@@ -379,7 +504,7 @@ public sealed class MainViewModel : ObservableObject, ICardActions
 
     /// <summary>Creates the application's folder if needed and remembers it on the application.</summary>
     /// <returns>The folder, or null when there is no documents folder or it could not be created.</returns>
-    private string? LinkFolder(JobApplication application, IReadOnlyCollection<string>? ownFiles = null)
+    private string? LinkFolder(JobApplication application)
     {
         if (_library is null)
             return null;
@@ -387,7 +512,7 @@ public sealed class MainViewModel : ObservableObject, ICardActions
         var folder = _library.FolderFor(application);
         try
         {
-            _library.Prepare(folder, ownFiles);
+            _library.Prepare(folder);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -395,6 +520,7 @@ public sealed class MainViewModel : ObservableObject, ICardActions
             return null;
         }
 
+        _folders.Remove(folder);
         if (application.Folder != folder)
         {
             var linked = application.Clone();
@@ -433,6 +559,7 @@ public sealed class MainViewModel : ObservableObject, ICardActions
 
         _settings = settings;
         _library = CreateLibrary(settings);
+        _folders.Clear();
         _applyTheme(settings.Theme);
         OnPropertyChanged(nameof(HasDocumentsFolder));
         Refresh();
@@ -466,7 +593,7 @@ public sealed class MainViewModel : ObservableObject, ICardActions
     }
 
     private static DocumentLibrary? CreateLibrary(Settings settings) =>
-        settings.HasDocumentsFolder ? new DocumentLibrary(settings.DocumentsFolder, settings.StandardDocumentsFolder, settings.Checklist) : null;
+        settings.HasDocumentsFolder ? new DocumentLibrary(settings.DocumentsFolder, settings.StandardDocumentsFolder) : null;
 
     private void Export()
     {

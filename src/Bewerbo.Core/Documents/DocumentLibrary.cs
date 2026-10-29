@@ -2,9 +2,10 @@ namespace Bewerbo.Core.Documents;
 
 /// <summary>
 /// The documents folder: one subfolder per company with the files sent to it.
-/// Bewerbo only creates folders and copies files in. It never deletes, moves or overwrites a file.
+/// This class only creates folders and copies files in. It never deletes, moves or overwrites a file;
+/// removing a file is left to the app, which asks first and uses the Recycle Bin.
 /// </summary>
-public sealed class DocumentLibrary(string root, string standardDocumentsFolder = "", IReadOnlyList<ChecklistItem>? checklist = null)
+public sealed class DocumentLibrary(string root, string standardDocumentsFolder = "")
 {
     private static readonly HashSet<string> IgnoredFiles = new(StringComparer.OrdinalIgnoreCase) { "desktop.ini", "thumbs.db", ".ds_store" };
 
@@ -12,7 +13,9 @@ public sealed class DocumentLibrary(string root, string standardDocumentsFolder 
 
     public string StandardDocumentsFolder { get; } = standardDocumentsFolder;
 
-    public IReadOnlyList<ChecklistItem> Checklist { get; } = checklist ?? DocumentChecklist.Default;
+    /// <summary>The files that every new company folder starts with.</summary>
+    public IReadOnlyList<DocumentFile> StandardDocuments =>
+        StandardDocumentsFolder.Length > 0 ? List(StandardDocumentsFolder) : [];
 
     /// <summary>A folder name for the company that Windows accepts.</summary>
     public static string FolderName(string company)
@@ -46,28 +49,23 @@ public sealed class DocumentLibrary(string root, string standardDocumentsFolder 
     /// Creates the folder and copies the standard documents into it. A folder that already exists is left as it is,
     /// so linking an application to a folder made by hand never adds files to it.
     /// </summary>
-    /// <param name="ownFiles">Files the user brings for this application, such as their own cover letter.
-    /// A standard document is not copied when every checklist item it covers is covered by these files.</param>
     /// <returns>The folder path.</returns>
-    public string Prepare(string folder, IReadOnlyCollection<string>? ownFiles = null)
+    public string Prepare(string folder)
     {
         if (Directory.Exists(folder))
             return folder;
 
         Directory.CreateDirectory(folder);
-        if (StandardDocumentsFolder.Length == 0 || !Directory.Exists(StandardDocumentsFolder))
-            return folder;
-
-        var provided = Checklist.Where(item => ownFiles?.Any(file => item.Matches(Path.GetFileName(file))) == true).ToList();
-        foreach (var document in List(StandardDocumentsFolder).Where(d => !IsReplacedBy(d, provided)))
-        {
+        foreach (var document in StandardDocuments)
             File.Copy(document.Path, Path.Combine(folder, document.Name));
-        }
 
         return folder;
     }
 
-    /// <summary>Copies files into the folder. A file whose name is taken gets a number, like "Cover letter (2).pdf".</summary>
+    /// <summary>
+    /// Copies files into the folder. A file whose name is taken gets a number, like "Cover letter (2).pdf",
+    /// unless the existing file has the same content, in which case it is not copied again.
+    /// </summary>
     /// <returns>The paths of the new copies.</returns>
     public static List<string> AddFiles(string folder, IEnumerable<string> files)
     {
@@ -76,6 +74,10 @@ public sealed class DocumentLibrary(string root, string standardDocumentsFolder 
         foreach (var file in files.Where(File.Exists))
         {
             if (string.Equals(Path.GetDirectoryName(Path.GetFullPath(file)), Path.GetFullPath(folder).TrimEnd(Path.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            var existing = Path.Combine(folder, Path.GetFileName(file));
+            if (File.Exists(existing) && SameContent(file, existing))
                 continue;
 
             var target = FreeName(folder, Path.GetFileName(file));
@@ -111,17 +113,24 @@ public sealed class DocumentLibrary(string root, string standardDocumentsFolder 
             .ToList();
     }
 
-    /// <summary>Which checklist items the files cover.</summary>
-    public IReadOnlyList<(ChecklistItem Item, bool IsPresent)> Check(IEnumerable<DocumentFile> files)
+    private static bool SameContent(string first, string second)
     {
-        var names = files.Select(f => f.Name).ToList();
-        return Checklist.Select(item => (item, names.Any(item.Matches))).ToList();
-    }
+        if (new FileInfo(first).Length != new FileInfo(second).Length)
+            return false;
 
-    private bool IsReplacedBy(DocumentFile document, List<ChecklistItem> provided)
-    {
-        var covers = Checklist.Where(item => item.Matches(document.Name)).ToList();
-        return covers.Count > 0 && covers.All(provided.Contains);
+        using var a = File.OpenRead(first);
+        using var b = File.OpenRead(second);
+        Span<byte> bufferA = stackalloc byte[8192];
+        Span<byte> bufferB = stackalloc byte[8192];
+        while (true)
+        {
+            var read = a.ReadAtLeast(bufferA, bufferA.Length, throwOnEndOfStream: false);
+            b.ReadAtLeast(bufferB[..read], read, throwOnEndOfStream: false);
+            if (!bufferA[..read].SequenceEqual(bufferB[..read]))
+                return false;
+            if (read < bufferA.Length)
+                return true;
+        }
     }
 
     private bool IsStandardDocumentsFolder(string path) =>

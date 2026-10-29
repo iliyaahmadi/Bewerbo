@@ -1,3 +1,4 @@
+using System.IO;
 using Bewerbo.Services;
 using Bewerbo.ViewModels;
 
@@ -16,6 +17,8 @@ internal sealed class FakeDialogService : IDialogService
 
     public Action<FolderImportViewModel>? OnFolderImport { get; set; }
 
+    public Action<FilesViewModel>? OnFiles { get; set; }
+
     public IReadOnlyList<string> FilesToPick { get; set; } = [];
 
     public void ShowEditor(EditorViewModel editor) => LastEditor = editor;
@@ -23,6 +26,8 @@ internal sealed class FakeDialogService : IDialogService
     public void ShowSettings(SettingsViewModel settings) => OnSettings?.Invoke(settings);
 
     public void ShowFolderImport(FolderImportViewModel import) => OnFolderImport?.Invoke(import);
+
+    public void ShowFiles(FilesViewModel files) => OnFiles?.Invoke(files);
 
     public bool Confirm(string message, string title) => true;
 
@@ -43,4 +48,11 @@ internal sealed class FakeDialogService : IDialogService
     public void OpenLink(string link) => Opened.Add(link);
 
     public void OpenPath(string path) => Opened.Add(path);
+
+    /// <summary>Deletes the file; the tests run in a temporary folder.</summary>
+    public bool MoveToRecycleBin(string path)
+    {
+        File.Delete(path);
+        return true;
+    }
 }
