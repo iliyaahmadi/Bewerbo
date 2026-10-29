@@ -3,6 +3,17 @@
 
     <BooleanToVisibilityConverter x:Key="VisibleWhenTrue" />
 
+    <!-- Shown only when focus moves with the keyboard, so clicking a control doesn't leave it highlighted. -->
+    <Style x:Key="FocusRing">
+        <Setter Property="Control.Template">
+            <Setter.Value>
+                <ControlTemplate>
+                    <Border Margin="-3" CornerRadius="10" BorderThickness="2" BorderBrush="{DynamicResource AccentLightBrush}" SnapsToDevicePixels="True" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <Style x:Key="SectionLabel" TargetType="TextBlock">
         <Setter Property="FontSize" Value="10" />
         <Setter Property="FontWeight" Value="SemiBold" />
@@ -21,6 +32,7 @@
     </Style>
 
     <Style TargetType="Button">
+        <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}" />
         <Setter Property="HorizontalContentAlignment" Value="Center" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="FontSize" Value="13" />
@@ -45,10 +57,6 @@
                         <Trigger Property="IsPressed" Value="True">
                             <Setter TargetName="Box" Property="Opacity" Value="0.76" />
                         </Trigger>
-                        <Trigger Property="IsKeyboardFocused" Value="True">
-                            <Setter TargetName="Box" Property="BorderBrush" Value="{DynamicResource AccentLightBrush}" />
-                            <Setter TargetName="Box" Property="BorderThickness" Value="2" />
-                        </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
@@ -68,6 +76,7 @@
     </Style>
 
     <Style x:Key="NavButton" TargetType="Button">
+        <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="FontSize" Value="13" />
         <Setter Property="Padding" Value="10,8" />
@@ -88,9 +97,6 @@
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
                             <Setter TargetName="Box" Property="Opacity" Value="0.8" />
-                        </Trigger>
-                        <Trigger Property="IsKeyboardFocused" Value="True">
-                            <Setter TargetName="Box" Property="BorderBrush" Value="{DynamicResource AccentLightBrush}" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -178,6 +184,7 @@
     </Style>
 
     <Style TargetType="ComboBox">
+        <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}" />
         <Setter Property="MinHeight" Value="42" />
         <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
         <Setter Property="Background" Value="{DynamicResource ControlBrush}" />
@@ -192,7 +199,7 @@
                                 BorderThickness="1" CornerRadius="8" />
                         <ContentPresenter Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
                                           VerticalAlignment="Center" Margin="12,0,42,0" IsHitTestVisible="False" />
-                        <ToggleButton Focusable="False" HorizontalAlignment="Stretch" Background="Transparent" BorderThickness="0"
+                        <ToggleButton Focusable="False" ClickMode="Press" HorizontalAlignment="Stretch" Background="Transparent" BorderThickness="0"
                                       IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
                             <ToggleButton.Template>
                                 <ControlTemplate TargetType="ToggleButton">
@@ -214,7 +221,10 @@
                         </Popup>
                     </Grid>
                     <ControlTemplate.Triggers>
-                        <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="ComboBoxBorder" Property="BorderBrush" Value="{DynamicResource ControlHoverBorderBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsDropDownOpen" Value="True">
                             <Setter TargetName="ComboBoxBorder" Property="BorderBrush" Value="{DynamicResource AccentLightBrush}" />
                         </Trigger>
                     </ControlTemplate.Triggers>
@@ -302,6 +312,7 @@
     </Style>
 
     <Style TargetType="CheckBox">
+        <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Foreground" Value="{DynamicResource TextBodyBrush}" />
         <Setter Property="Template">
@@ -328,10 +339,6 @@
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="Box" Property="BorderBrush" Value="{DynamicResource AccentLightBrush}" />
                         </Trigger>
-                        <Trigger Property="IsKeyboardFocused" Value="True">
-                            <Setter TargetName="Box" Property="BorderBrush" Value="{DynamicResource AccentLightBrush}" />
-                            <Setter TargetName="Box" Property="BorderThickness" Value="2" />
-                        </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
@@ -340,6 +347,7 @@
 
     <!-- A radio button drawn as a selectable tile, used for the theme choice. -->
     <Style x:Key="ChoiceTile" TargetType="RadioButton">
+        <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="FontSize" Value="13" />
         <Setter Property="FontWeight" Value="SemiBold" />

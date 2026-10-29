@@ -24,6 +24,7 @@ public partial class App : Application
         }
 
         DispatcherUnhandledException += OnUnhandledException;
+        InputBehavior.Register();
 
         try
         {
