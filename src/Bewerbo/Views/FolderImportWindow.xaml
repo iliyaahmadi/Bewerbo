@@ -1,0 +1,90 @@
+<Window x:Class="Bewerbo.Views.FolderImportWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:Bewerbo.ViewModels"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance Type=vm:FolderImportViewModel}"
+        Title="Import folders"
+        Width="600" Height="760" MinWidth="520" MinHeight="520"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="{DynamicResource SidebarBrush}"
+        Foreground="{DynamicResource TextBrush}"
+        FontFamily="Segoe UI">
+
+    <Grid Margin="28">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel>
+            <TextBlock Text="Add applications from folders" FontSize="25" FontWeight="SemiBold" />
+            <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextMutedBrush}" Margin="0,6,0,0">
+                These company folders don't have an application yet. Each one you keep checked becomes an application,
+                dated by its oldest file. Your files stay where they are.
+            </TextBlock>
+        </StackPanel>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,18,0,8">
+            <TextBlock Text="FOLDERS" Style="{StaticResource SectionLabel}" VerticalAlignment="Center" Margin="0,0,12,0" />
+            <Button Content="Select all" Command="{Binding SelectAllCommand}" Style="{StaticResource GhostButton}" FontSize="11" Padding="8,5" />
+            <Button Content="Select none" Command="{Binding SelectNoneCommand}" Style="{StaticResource GhostButton}" FontSize="11" Padding="8,5" />
+        </StackPanel>
+
+        <Border Grid.Row="2" Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="14,10">
+                <ItemsControl ItemsSource="{Binding Folders}" Focusable="False">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:FolderChoice}">
+                            <CheckBox IsChecked="{Binding IsSelected}" Margin="0,6">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Company}" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" />
+                                    <TextBlock Text="{Binding Details}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" Margin="0,2,0,0" />
+                                </StackPanel>
+                            </CheckBox>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Border>
+
+        <StackPanel Grid.Row="3">
+            <TextBlock Text="Position *" Style="{StaticResource FieldLabel}" />
+            <TextBox Text="{Binding Position, UpdateSourceTrigger=PropertyChanged}" MaxLength="250" />
+            <Grid Margin="0,15,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="Application type" Style="{StaticResource FieldLabel}" Margin="0,0,0,6" />
+                    <ComboBox ItemsSource="{Binding Types}" SelectedItem="{Binding Type}" />
+                </StackPanel>
+                <StackPanel Grid.Column="2">
+                    <TextBlock Text="Status" Style="{StaticResource FieldLabel}" Margin="0,0,0,6" />
+                    <ComboBox ItemsSource="{Binding Statuses}" SelectedItem="{Binding Status}" />
+                </StackPanel>
+            </Grid>
+            <TextBlock Text="The same position, type and status are used for every folder. You can edit each application afterwards."
+                       Style="{StaticResource HintText}" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding Error}" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap" Margin="0,10,0,0" />
+        </StackPanel>
+
+        <Grid Grid.Row="4" Margin="0,16,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Button Grid.Column="1" Content="Cancel" IsCancel="True" />
+            <Button Grid.Column="3" Content="{Binding CreateLabel}" Command="{Binding CreateCommand}" Style="{StaticResource PrimaryButton}" IsDefault="True" />
+        </Grid>
+    </Grid>
+</Window>

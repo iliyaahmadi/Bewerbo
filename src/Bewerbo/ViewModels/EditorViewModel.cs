@@ -9,15 +9,25 @@ public sealed class EditorViewModel : ObservableObject
     private readonly Func<JobApplication, bool> _save;
     private readonly Func<JobApplication, bool> _delete;
     private string _error = "";
+    private string? _clipboardText;
 
-    public EditorViewModel(ApplicationDraft draft, JobApplication? original, Func<JobApplication, bool> save, Func<JobApplication, bool> delete)
+    public EditorViewModel(
+        ApplicationDraft draft,
+        JobApplication? original,
+        Func<JobApplication, bool> save,
+        Func<JobApplication, bool> delete,
+        DocumentsViewModel? documents = null,
+        string? newFolderNote = null)
     {
         _draft = draft;
         _original = original;
         _save = save;
         _delete = delete;
+        Documents = documents;
+        NewFolderNote = newFolderNote;
         SaveCommand = new RelayCommand(Save);
         DeleteCommand = new RelayCommand(Delete);
+        FillFromClipboardCommand = new RelayCommand(() => Paste(_clipboardText));
     }
 
     public event EventHandler? CloseRequested;
@@ -33,6 +43,30 @@ public sealed class EditorViewModel : ObservableObject
     public RelayCommand SaveCommand { get; }
 
     public RelayCommand DeleteCommand { get; }
+
+    public RelayCommand FillFromClipboardCommand { get; }
+
+    public DocumentsViewModel? Documents { get; }
+
+    public bool HasDocuments => Documents is not null;
+
+    /// <summary>Tells the user where the folder for a new application will be created, or null when no folder is created.</summary>
+    public string? NewFolderNote { get; }
+
+    public bool HasNewFolderNote => NewFolderNote is not null;
+
+    /// <summary>True while the clipboard holds application details that have not been pasted yet.</summary>
+    public bool HasClipboardDetails => _clipboardText is not null;
+
+    /// <summary>Offers to fill a new, empty form from the clipboard when it holds application details.</summary>
+    public void OfferClipboard(string? text)
+    {
+        if (_original is not null || DetailsParser.Parse(text).IsEmpty)
+            return;
+
+        _clipboardText = text;
+        OnPropertyChanged(nameof(HasClipboardDetails));
+    }
 
     public string Error
     {
@@ -72,6 +106,7 @@ public sealed class EditorViewModel : ObservableObject
 
         _draft.Fill(details);
         Error = "";
+        _clipboardText = null;
         OnPropertyChanged(string.Empty);
         return true;
     }

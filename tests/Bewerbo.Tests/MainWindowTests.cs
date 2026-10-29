@@ -24,6 +24,7 @@ public class MainWindowTests
         var folder = Directory.CreateTempSubdirectory("bewerbo-ui-").FullName;
         var screenshots = Directory.CreateDirectory(Path.Combine(AppContext.BaseDirectory, "screenshots")).FullName;
         var store = new ApplicationStore(Path.Combine(folder, DataFolder.FileName));
+        var settingsStore = new SettingsStore(Path.Combine(folder, SettingsStore.FileName));
         store.Save(SampleApplications());
 
         var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
@@ -31,10 +32,11 @@ public class MainWindowTests
         {
             Source = new Uri("pack://application:,,,/Bewerbo;component/Themes/Controls.xaml"),
         });
+        ThemeManager.Apply(app, AppTheme.Dark);
 
         var dialogs = new FakeDialogService();
         var window = new MainWindow();
-        var main = new MainViewModel(store, new FaviconCache(Path.Combine(folder, "icons")), dialogs);
+        var main = new MainViewModel(store, settingsStore, new FaviconCache(Path.Combine(folder, "icons")), dialogs, theme => ThemeManager.Apply(app, theme));
         window.DataContext = main;
         window.Show();
         Render(window);
@@ -82,6 +84,93 @@ public class MainWindowTests
         Render(window);
         Assert.False(main.HasResults);
         Snap(window, Path.Combine(screenshots, "no-results.png"));
+
+        main.Search = "";
+        Assert.False(main.AddFromText("just some text"));
+        Assert.True(main.AddFromText("Company: Pasted GmbH\nPosition: Kaufmann für Büromanagement"));
+        Assert.Equal("Pasted GmbH", dialogs.LastEditor!.Company);
+        Assert.False(dialogs.LastEditor.HasClipboardDetails);
+
+        // Documents: choose a documents folder that already has company folders, then import them.
+        var documents = Directory.CreateDirectory(Path.Combine(folder, "Bewerbungen")).FullName;
+        var standard = Directory.CreateDirectory(Path.Combine(documents, "Standard")).FullName;
+        File.WriteAllText(Path.Combine(standard, "Lebenslauf.pdf"), "cv");
+        File.WriteAllText(Path.Combine(standard, "Zeugnisse.pdf"), "certificates");
+        var existing = Directory.CreateDirectory(Path.Combine(documents, "Altes Werk")).FullName;
+        File.WriteAllText(Path.Combine(existing, "Anschreiben_Altes_Werk.pdf"), "letter");
+        File.SetLastWriteTime(Path.Combine(existing, "Anschreiben_Altes_Werk.pdf"), new DateTime(2026, 9, 14, 10, 0, 0));
+
+        dialogs.OnSettings = settings =>
+        {
+            var settingsWindow = new SettingsWindow(settings) { Owner = window };
+            settingsWindow.Show();
+            settings.UseLightTheme = true;
+            settings.DocumentsFolder = documents;
+            settings.StandardDocumentsFolder = standard;
+            Render(settingsWindow);
+            Snap(settingsWindow, Path.Combine(screenshots, "settings.png"));
+            settings.SaveCommand.Execute(null);
+            Assert.False(settingsWindow.IsVisible);
+        };
+        dialogs.OnFolderImport = import =>
+        {
+            Assert.Equal("Altes Werk", Assert.Single(import.Folders).Company);
+            Assert.Equal("Fachinformatiker für Systemintegration", import.Position);
+            var importWindow = new FolderImportWindow(import) { Owner = window };
+            importWindow.Show();
+            Render(importWindow);
+            Snap(importWindow, Path.Combine(screenshots, "import-folders.png"));
+            import.CreateCommand.Execute(null);
+            Assert.False(importWindow.IsVisible);
+        };
+        main.SettingsCommand.Execute(null);
+        Render(window);
+
+        Assert.False(ThemeManager.IsDark);
+        Assert.Equal(AppTheme.Light, settingsStore.Load().Theme);
+        Assert.True(main.HasDocumentsFolder);
+        var imported = store.Load().Single(a => a.Company == "Altes Werk");
+        Assert.Equal(existing, imported.Folder);
+        Assert.Equal(new DateOnly(2026, 9, 14), imported.AppliedOn);
+        Assert.Equal(["Anschreiben_Altes_Werk.pdf"], Directory.GetFiles(existing).Select(Path.GetFileName));
+
+        // A new application gets its own folder with the standard documents.
+        main.AddCommand.Execute(null);
+        dialogs.LastEditor!.Paste("Company: Neue Firma\nPosition: Fachinformatiker für Systemintegration");
+        Assert.True(dialogs.LastEditor.HasNewFolderNote);
+        dialogs.LastEditor.SaveCommand.Execute(null);
+        var newFolder = Path.Combine(documents, "Neue Firma");
+        Assert.Equal(newFolder, store.Load().Single(a => a.Company == "Neue Firma").Folder);
+        Assert.True(File.Exists(Path.Combine(newFolder, "Lebenslauf.pdf")));
+
+        // Dropping a file on a card copies it into the company folder.
+        var letter = Path.Combine(folder, "Anschreiben.pdf");
+        File.WriteAllText(letter, "letter");
+        main.Cards.Single(c => c.Company == "Neue Firma").AddFiles([letter]);
+        Assert.True(File.Exists(Path.Combine(newFolder, "Anschreiben.pdf")));
+        Assert.True(File.Exists(letter));
+        var card = main.Cards.Single(c => c.Company == "Neue Firma");
+        Assert.All(card.Documents, document => Assert.True(document.IsPresent));
+        Assert.Equal("3 files", card.FileCountText);
+
+        // An application without a folder gets one when its folder is opened.
+        var unlinked = main.Cards.Single(c => c.Company == "Grünwerk");
+        Assert.Equal("No folder yet", unlinked.FileCountText);
+        unlinked.OpenFolderCommand.Execute(null);
+        Assert.Equal(Path.Combine(documents, "Grünwerk"), dialogs.Opened.Last());
+        Assert.Equal(Path.Combine(documents, "Grünwerk"), store.Load().Single(a => a.Company == "Grünwerk").Folder);
+
+        main.Edit(store.Load().Single(a => a.Company == "Neue Firma"));
+        var documentsEditor = Assert.IsType<EditorViewModel>(dialogs.LastEditor);
+        Assert.Equal(3, documentsEditor.Documents!.Files.Count);
+        var documentsWindow = new EditorWindow(documentsEditor) { Owner = window };
+        documentsWindow.Show();
+        Render(documentsWindow);
+        Snap(documentsWindow, Path.Combine(screenshots, "editor-documents-light.png"));
+        documentsWindow.Close();
+
+        Render(window);
+        Snap(window, Path.Combine(screenshots, "main-light.png"));
 
         Assert.Empty(dialogs.Errors);
         window.Close();

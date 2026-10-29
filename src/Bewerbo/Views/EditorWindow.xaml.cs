@@ -1,5 +1,5 @@
-using System.Runtime.InteropServices;
 using System.Windows;
+using Bewerbo.Core;
 using Bewerbo.Services;
 using Bewerbo.ViewModels;
 
@@ -12,25 +12,21 @@ public partial class EditorWindow : Window
     public EditorWindow(EditorViewModel editor)
     {
         InitializeComponent();
-        WindowTheme.Attach(this);
+        ThemeManager.Attach(this);
         DataContext = _editor = editor;
         editor.CloseRequested += (_, _) => Close();
-        Loaded += (_, _) => CompanyBox.Focus();
+        Loaded += (_, _) =>
+        {
+            editor.OfferClipboard(ClipboardText.Read());
+            CompanyBox.Focus();
+        };
     }
 
-    private void OnPasteClick(object sender, RoutedEventArgs e)
-    {
-        string? text = null;
-        try
-        {
-            if (Clipboard.ContainsText())
-                text = Clipboard.GetText();
-        }
-        catch (COMException)
-        {
-            // Another app is holding the clipboard; treat it as empty.
-        }
+    private void OnPasteClick(object sender, RoutedEventArgs e) => _editor.Paste(ClipboardText.Read());
 
-        _editor.Paste(text);
+    private void OnCopyPromptClick(object sender, RoutedEventArgs e)
+    {
+        if (ClipboardText.Write(DetailsParser.Prompt))
+            CopyPromptButton.Content = "Prompt copied ✓";
     }
 }

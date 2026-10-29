@@ -1,32 +1,48 @@
+using System.IO;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using Bewerbo.Core;
+using Bewerbo.Core.Documents;
 using Bewerbo.Services;
 
 namespace Bewerbo.ViewModels;
 
 public sealed class ApplicationCardViewModel : ObservableObject
 {
-    private readonly Func<JobApplication, ApplicationStatus, bool> _changeStatus;
+    private readonly ICardActions _actions;
     private ApplicationStatus _status;
     private ImageSource? _icon;
 
-    public ApplicationCardViewModel(
-        JobApplication application,
-        DateOnly today,
-        FaviconCache favicons,
-        Func<JobApplication, ApplicationStatus, bool> changeStatus,
-        Action<JobApplication> edit,
-        Action<string> openLink)
+    public ApplicationCardViewModel(JobApplication application, DateOnly today, FaviconCache favicons, DocumentLibrary? library, ICardActions actions)
     {
         Application = application;
-        _changeStatus = changeStatus;
+        _actions = actions;
         _status = application.Status;
         IsFollowUpDue = application.IsFollowUpDue(today);
         Details = BuildDetails(application, IsFollowUpDue);
-        EditCommand = new RelayCommand(() => edit(application));
-        OpenLinkCommand = new RelayCommand(() => openLink(application.Link));
+        EditCommand = new RelayCommand(() => actions.Edit(application));
+        OpenLinkCommand = new RelayCommand(() => actions.OpenLink(application));
+        OpenFolderCommand = new RelayCommand(() => actions.OpenFolder(application));
+
+        if (library is not null)
+        {
+            ShowDocuments = true;
+            var folder = library.FolderFor(application);
+            HasFolder = Directory.Exists(folder);
+            var files = DocumentLibrary.List(folder);
+            var kinds = files.Aggregate(DocumentKinds.None, (all, file) => all | file.Kinds);
+            Documents =
+            [
+                new DocumentStatus("Anschreiben", kinds.HasFlag(DocumentKinds.CoverLetter)),
+                new DocumentStatus("Lebenslauf", kinds.HasFlag(DocumentKinds.Resume)),
+                new DocumentStatus("Zeugnisse", kinds.HasFlag(DocumentKinds.Certificates)),
+            ];
+            FileCountText = !HasFolder ? "No folder yet" : files.Count == 1 ? "1 file" : $"{files.Count} files";
+            FilesToolTip = files.Count > 0
+                ? string.Join("\n", files.Select(f => f.Name))
+                : "Drop files on this card to copy them into the company folder.";
+        }
 
         if (WebLink.Host(application.Link) is { } host)
             _ = LoadIconAsync(favicons, host);
@@ -65,11 +81,24 @@ public sealed class ApplicationCardViewModel : ObservableObject
 
     public bool HasLink => Application.Link.Length > 0;
 
+    public bool ShowDocuments { get; }
+
+    public bool HasFolder { get; }
+
+    /// <summary>Whether the cover letter, CV and certificates are in the company folder.</summary>
+    public IReadOnlyList<DocumentStatus> Documents { get; } = [];
+
+    public string FileCountText { get; } = "";
+
+    public string FilesToolTip { get; } = "";
+
     public IReadOnlyList<ApplicationStatus> Statuses { get; } = Enum.GetValues<ApplicationStatus>();
 
     public ICommand EditCommand { get; }
 
     public ICommand OpenLinkCommand { get; }
+
+    public ICommand OpenFolderCommand { get; }
 
     public ImageSource? Icon
     {
@@ -97,7 +126,7 @@ public sealed class ApplicationCardViewModel : ObservableObject
             // Saving rebuilds the card list, so let the dropdown finish its own update first.
             Dispatcher.CurrentDispatcher.InvokeAsync(() =>
             {
-                if (!_changeStatus(Application, value))
+                if (!_actions.ChangeStatus(Application, value))
                 {
                     _status = Application.Status;
                     OnPropertyChanged(nameof(Status));
@@ -105,6 +134,8 @@ public sealed class ApplicationCardViewModel : ObservableObject
             });
         }
     }
+
+    public void AddFiles(IReadOnlyList<string> files) => _actions.AddFiles(Application, files);
 
     private async Task LoadIconAsync(FaviconCache favicons, string host) =>
         Icon = await favicons.GetAsync(host);
@@ -120,4 +151,11 @@ public sealed class ApplicationCardViewModel : ObservableObject
             parts.Add((followUpDue ? "Follow-up due · " : "Follow up ") + Dates.ToText(followUp));
         return string.Join("  •  ", parts);
     }
+}
+
+public sealed record DocumentStatus(string Label, bool IsPresent)
+{
+    public string Text => IsPresent ? "✓ " + Label : Label;
+
+    public string ToolTip => IsPresent ? Label + " is in the folder" : "No " + Label + " in the folder yet";
 }

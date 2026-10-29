@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/logo.png" width="96" alt="Bewerbo logo"></p>
+
 # Bewerbo
 
 A small Windows app for keeping track of job and Ausbildung applications.
@@ -15,8 +17,16 @@ computer in a single JSON file. There is no account and no server.
 - **Positions.** Applications are grouped by position with a count for each, so you can see how many
   went out for every role.
 - **Search, filter and sort** by type, position, status, company, notes or location.
-- **Paste details.** Copy a block like the one below (for example from a chat assistant that helped write the
-  cover letter) and Bewerbo fills in the form. Markdown bullets, bold labels and code fences are fine.
+- **Documents.** Point Bewerbo at the folder where you keep one subfolder per company (for example
+  `Documents\Bewerbungen\Siemens`). Each card then shows whether the Anschreiben, Lebenslauf and Zeugnisse are
+  there, opens the folder with one click, and copies files you drop on it into the folder. New applications get
+  their own folder with a copy of your standard documents, and **Import from folders** turns company folders you
+  already have into applications. Bewerbo only creates folders and copies files in; it never deletes, moves or
+  overwrites anything.
+- **Paste details.** Copy a block like the one below and press `Ctrl+V` in the main window, or use
+  **Paste details** in the form, and Bewerbo fills everything in. When the form opens with such a block on the
+  clipboard, it offers to fill it in. **Copy prompt** in the form copies a short prompt for a chat assistant so
+  it always answers in this format. Markdown bullets, bold labels and code fences are fine.
 
   ```
   Company: Example GmbH
@@ -33,8 +43,9 @@ computer in a single JSON file. There is no account and no server.
 
 - **Safe storage.** Every save replaces the data file atomically and keeps the previous version as a backup.
   Backups can be exported and imported as JSON.
-- **Dark theme**, with a title bar that follows the Windows light/dark setting.
-- **Keyboard:** `Ctrl+N` adds an application, `Ctrl+F` jumps to search, `Esc` clears it.
+- **Light and dark themes.** Follows the Windows setting by default, or pick one in Settings.
+- **Keyboard:** `Ctrl+N` adds an application, `Ctrl+V` adds one from copied details, `Ctrl+F` jumps to search,
+  `Esc` clears it, `Ctrl+,` opens Settings.
 
 ## Download
 
@@ -60,7 +71,7 @@ The core library and its tests also build and run on Linux and macOS. The app an
 
 ```
 src/
-  Bewerbo.Core/     Domain model, storage, filtering, summary and the paste parser. No UI code.
+  Bewerbo.Core/     Domain model, storage, settings, documents, filtering, summary and the paste parser. No UI code.
   Bewerbo/          WPF app: views, view models, theme and Windows services.
 tests/
   Bewerbo.Core.Tests/   Unit tests for the core library.
@@ -73,7 +84,8 @@ and anything that needs a window (dialogs, file pickers, opening links) goes thr
 ## Data
 
 Applications are stored in `%LOCALAPPDATA%\Bewerbo\applications.json`, with the previous save in
-`applications.json.bak` and cached website icons in `icons\`. Website icons are fetched from
+`applications.json.bak`, settings in `settings.json` and cached website icons in `icons\`. Your documents stay
+in the folders you chose; the data file only stores the path of each application's folder. Website icons are fetched from
 Google's favicon service using only the host name of the job link.
 
 ## License

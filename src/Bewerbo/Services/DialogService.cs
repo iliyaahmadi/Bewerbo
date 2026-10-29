@@ -1,4 +1,6 @@
+using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using Bewerbo.Core;
 using Bewerbo.ViewModels;
@@ -12,7 +14,13 @@ public sealed class DialogService(Window owner) : IDialogService
     private const string BackupFilter = "Bewerbo backup (*.json)|*.json";
 
     public void ShowEditor(EditorViewModel editor) =>
-        new EditorWindow(editor) { Owner = owner }.ShowDialog();
+        new EditorWindow(editor) { Owner = ActiveWindow }.ShowDialog();
+
+    public void ShowSettings(SettingsViewModel settings) =>
+        new SettingsWindow(settings) { Owner = owner }.ShowDialog();
+
+    public void ShowFolderImport(FolderImportViewModel import) =>
+        new FolderImportWindow(import) { Owner = owner }.ShowDialog();
 
     public bool Confirm(string message, string title) =>
         MessageBox.Show(ActiveWindow, message, title, MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
@@ -26,13 +34,27 @@ public sealed class DialogService(Window owner) : IDialogService
     public string? PickExportFile(string suggestedName)
     {
         var dialog = new SaveFileDialog { Title = "Export your applications", Filter = BackupFilter, FileName = suggestedName };
-        return dialog.ShowDialog(owner) == true ? dialog.FileName : null;
+        return dialog.ShowDialog(ActiveWindow) == true ? dialog.FileName : null;
     }
 
     public string? PickImportFile()
     {
         var dialog = new OpenFileDialog { Title = "Import a Bewerbo backup", Filter = BackupFilter };
-        return dialog.ShowDialog(owner) == true ? dialog.FileName : null;
+        return dialog.ShowDialog(ActiveWindow) == true ? dialog.FileName : null;
+    }
+
+    public string? PickFolder(string title, string initialFolder)
+    {
+        var dialog = new OpenFolderDialog { Title = title };
+        if (Directory.Exists(initialFolder))
+            dialog.InitialDirectory = initialFolder;
+        return dialog.ShowDialog(ActiveWindow) == true ? dialog.FolderName : null;
+    }
+
+    public IReadOnlyList<string> PickFiles(string title)
+    {
+        var dialog = new OpenFileDialog { Title = title, Multiselect = true };
+        return dialog.ShowDialog(ActiveWindow) == true ? dialog.FileNames : [];
     }
 
     public void OpenLink(string link)
@@ -43,13 +65,20 @@ public sealed class DialogService(Window owner) : IDialogService
             return;
         }
 
+        Start(link);
+    }
+
+    public void OpenPath(string path) => Start(path);
+
+    private void Start(string target)
+    {
         try
         {
-            Process.Start(new ProcessStartInfo(link) { UseShellExecute = true });
+            Process.Start(new ProcessStartInfo(target) { UseShellExecute = true });
         }
-        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
+        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
         {
-            ShowError(ex.Message, "Unable to open link");
+            ShowError(ex.Message, "Unable to open");
         }
     }
 
