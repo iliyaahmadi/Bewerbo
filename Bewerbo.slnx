@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Bewerbo.Core/Bewerbo.Core.csproj" />
+    <Project Path="src/Bewerbo/Bewerbo.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Bewerbo.Core.Tests/Bewerbo.Core.Tests.csproj" />
+    <Project Path="tests/Bewerbo.Tests/Bewerbo.Tests.csproj" />
+  </Folder>
+</Solution>
