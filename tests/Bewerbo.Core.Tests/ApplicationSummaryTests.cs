@@ -9,7 +9,7 @@ public class ApplicationSummaryTests
         due.FollowUpOn = TestData.Today;
         var rejectedButDue = TestData.Application(status: ApplicationStatus.Rejected);
         rejectedButDue.FollowUpOn = TestData.Today.AddDays(-3);
-        var later = TestData.Application(type: ApplicationType.Job, status: ApplicationStatus.Interviewing);
+        var later = TestData.Application(type: "Job", status: ApplicationStatus.Interviewing);
         later.FollowUpOn = TestData.Today.AddDays(1);
 
         var summary = ApplicationSummary.From(
@@ -17,14 +17,13 @@ public class ApplicationSummaryTests
             due,
             rejectedButDue,
             later,
-            TestData.Application(type: ApplicationType.Job, status: ApplicationStatus.Withdrawn),
-            TestData.Application(type: ApplicationType.Job, status: ApplicationStatus.Accepted),
+            TestData.Application(type: "Job", status: ApplicationStatus.Withdrawn),
+            TestData.Application(type: "Job", status: ApplicationStatus.Accepted),
         ], TestData.Today);
 
         Assert.Equal(5, summary.Total);
         Assert.Equal(3, summary.Remaining);
-        Assert.Equal(1, summary.RemainingAusbildung);
-        Assert.Equal(2, summary.RemainingJobs);
+        Assert.Equal([new LabelGroup("job", "Job", 2), new LabelGroup("ausbildung", "Ausbildung", 1)], summary.RemainingByType);
         Assert.Equal(1, summary.Interviewing);
         Assert.Equal(1, summary.OffersOrAccepted);
         Assert.Equal(1, summary.FollowUpsDue);

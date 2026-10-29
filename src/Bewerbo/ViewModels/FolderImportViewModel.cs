@@ -8,14 +8,21 @@ public sealed class FolderImportViewModel : ObservableObject
 {
     private readonly Func<IReadOnlyList<JobApplication>, bool> _create;
     private string _position;
-    private ApplicationType _type = ApplicationType.Ausbildung;
+    private string _type;
     private ApplicationStatus _status = ApplicationStatus.Applied;
     private string _error = "";
 
-    public FolderImportViewModel(IReadOnlyList<FolderCandidate> candidates, string position, Func<IReadOnlyList<JobApplication>, bool> create)
+    public FolderImportViewModel(
+        IReadOnlyList<FolderCandidate> candidates,
+        string position,
+        string type,
+        IReadOnlyList<string> typeSuggestions,
+        Func<IReadOnlyList<JobApplication>, bool> create)
     {
         _create = create;
         _position = position;
+        _type = type;
+        TypeSuggestions = typeSuggestions.Select(name => new Suggestion(name, new RelayCommand(() => Type = name))).ToList();
         Folders = candidates.Select(candidate => new FolderChoice(candidate, OnSelectionChanged)).ToList();
         SelectAllCommand = new RelayCommand(() => SelectAll(true));
         SelectNoneCommand = new RelayCommand(() => SelectAll(false));
@@ -26,13 +33,13 @@ public sealed class FolderImportViewModel : ObservableObject
 
     public IReadOnlyList<FolderChoice> Folders { get; }
 
-    public IReadOnlyList<ApplicationType> Types { get; } = Enum.GetValues<ApplicationType>();
+    public IReadOnlyList<Suggestion> TypeSuggestions { get; }
 
     public IReadOnlyList<ApplicationStatus> Statuses { get; } = Enum.GetValues<ApplicationStatus>();
 
     public string Position { get => _position; set => SetProperty(ref _position, value); }
 
-    public ApplicationType Type { get => _type; set => SetProperty(ref _type, value); }
+    public string Type { get => _type; set => SetProperty(ref _type, value); }
 
     public ApplicationStatus Status { get => _status; set => SetProperty(ref _status, value); }
 

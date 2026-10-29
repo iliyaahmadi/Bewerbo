@@ -4,12 +4,12 @@ public class ApplicationQueryTests
 {
     private static readonly List<JobApplication> Applications =
     [
-        Make("Alpha", "Fachinformatiker Systemintegration", ApplicationType.Ausbildung, ApplicationStatus.Applied, day: 1, notes: "DNS and routing"),
-        Make("Beta", "fachinformatiker  systemintegration", ApplicationType.Ausbildung, ApplicationStatus.Rejected, day: 2),
-        Make("Gamma", "Backend Developer", ApplicationType.Job, ApplicationStatus.Interviewing, day: 3, location: "Berlin"),
+        Make("Alpha", "Fachinformatiker Systemintegration", "Ausbildung", ApplicationStatus.Applied, day: 1, notes: "DNS and routing"),
+        Make("Beta", "fachinformatiker  systemintegration", "Ausbildung", ApplicationStatus.Rejected, day: 2),
+        Make("Gamma", "Backend Developer", "Job", ApplicationStatus.Interviewing, day: 3, location: "Berlin"),
     ];
 
-    private static JobApplication Make(string company, string position, ApplicationType type, ApplicationStatus status, int day, string notes = "", string location = "")
+    private static JobApplication Make(string company, string position, string type, ApplicationStatus status, int day, string notes = "", string location = "")
     {
         var application = TestData.Application(company, position, type, status, new DateTime(2026, 10, day, 0, 0, 0, DateTimeKind.Utc));
         application.Notes = notes;
@@ -23,7 +23,7 @@ public class ApplicationQueryTests
 
     [Fact]
     public void Filters_by_type_and_status() =>
-        Assert.Equal(["Alpha"], Companies(new ApplicationFilter(ApplicationType.Ausbildung, ApplicationStatus.Applied)));
+        Assert.Equal(["Alpha"], Companies(new ApplicationFilter(Labels.Key(" ausbildung"), ApplicationStatus.Applied)));
 
     [Fact]
     public void Filters_by_position_ignoring_case_and_spaces() =>

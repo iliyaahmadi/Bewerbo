@@ -34,8 +34,8 @@
         </DataTemplate>
 
         <DataTemplate x:Key="StatusFilterTemplate" DataType="{x:Type vm:NavItem}">
-            <Button Style="{StaticResource FilterChip}" Command="{Binding Command}">
-                <TextBlock>
+            <Button Style="{StaticResource FilterChip}" Command="{Binding Command}" MaxWidth="320" ToolTip="{Binding Label}">
+                <TextBlock TextTrimming="CharacterEllipsis">
                     <Run Text="{Binding Label, Mode=OneWay}" /><Run Text="  " /><Run Text="{Binding Count, Mode=OneWay}" />
                 </TextBlock>
             </Button>
@@ -88,15 +88,23 @@
                         <TextBlock Text="{Binding Position}" ToolTip="{Binding Position}" FontSize="14" Margin="0,4,0,10"
                                    Foreground="{DynamicResource TextSecondaryBrush}" TextTrimming="CharacterEllipsis" />
                         <WrapPanel>
-                            <Border CornerRadius="4" Padding="7,3" Margin="0,0,10,0">
+                            <Border CornerRadius="4" Padding="7,3" Margin="0,0,10,0" Visibility="{Binding HasType, Converter={StaticResource VisibleWhenTrue}}">
                                 <Border.Style>
                                     <Style TargetType="Border">
-                                        <Setter Property="Background" Value="{DynamicResource JobTagBrush}" />
-                                        <Setter Property="TextElement.Foreground" Value="{DynamicResource JobTagTextBrush}" />
+                                        <Setter Property="Background" Value="{DynamicResource Tag0Brush}" />
+                                        <Setter Property="TextElement.Foreground" Value="{DynamicResource Tag0TextBrush}" />
                                         <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsAusbildung}" Value="True">
-                                                <Setter Property="Background" Value="{DynamicResource AusbildungTagBrush}" />
-                                                <Setter Property="TextElement.Foreground" Value="{DynamicResource AusbildungTagTextBrush}" />
+                                            <DataTrigger Binding="{Binding TagColor}" Value="1">
+                                                <Setter Property="Background" Value="{DynamicResource Tag1Brush}" />
+                                                <Setter Property="TextElement.Foreground" Value="{DynamicResource Tag1TextBrush}" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding TagColor}" Value="2">
+                                                <Setter Property="Background" Value="{DynamicResource Tag2Brush}" />
+                                                <Setter Property="TextElement.Foreground" Value="{DynamicResource Tag2TextBrush}" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding TagColor}" Value="3">
+                                                <Setter Property="Background" Value="{DynamicResource Tag3Brush}" />
+                                                <Setter Property="TextElement.Foreground" Value="{DynamicResource Tag3TextBrush}" />
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
@@ -189,7 +197,9 @@
 
                 <StackPanel Grid.Row="1" Margin="0,28,0,0">
                     <TextBlock Text="APPLICATIONS" Style="{StaticResource SectionLabel}" Margin="10,0,0,8" />
-                    <ItemsControl ItemsSource="{Binding Categories}" ItemTemplate="{StaticResource NavItemTemplate}" Focusable="False" />
+                    <ScrollViewer MaxHeight="260" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
+                        <ItemsControl ItemsSource="{Binding Categories}" ItemTemplate="{StaticResource NavItemTemplate}" Focusable="False" />
+                    </ScrollViewer>
                 </StackPanel>
 
                 <Border Grid.Row="2" Background="{DynamicResource WindowBrush}" BorderBrush="{DynamicResource SubtleBorderBrush}" BorderThickness="1"
@@ -218,16 +228,17 @@
                             </TextBlock>
                         </StackPanel>
 
-                        <Grid>
-                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                            <TextBlock Text="Ausbildung" Style="{StaticResource RowLabel}" />
-                            <TextBlock Text="{Binding Summary.RemainingAusbildung}" Style="{StaticResource RowValue}" />
-                        </Grid>
-                        <Grid>
-                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                            <TextBlock Text="Jobs" Style="{StaticResource RowLabel}" />
-                            <TextBlock Text="{Binding Summary.RemainingJobs}" Style="{StaticResource RowValue}" />
-                        </Grid>
+                        <ItemsControl ItemsSource="{Binding Summary.RemainingByType}" Focusable="False">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,0,0,7">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding Name}" Style="{StaticResource RowLabel}" TextTrimming="CharacterEllipsis" Margin="0,0,8,0" />
+                                        <TextBlock Text="{Binding Count}" Style="{StaticResource RowValue}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
 
                         <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="0,5,0,12" />
 
@@ -268,17 +279,6 @@
                         </Grid>
                     </StackPanel>
                 </Border>
-
-                <Grid Grid.Row="3" Margin="0,22,0,14">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
-                    </Grid.RowDefinitions>
-                    <TextBlock Text="POSITIONS" Style="{StaticResource SectionLabel}" Margin="10,0,0,8" />
-                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                        <ItemsControl ItemsSource="{Binding Positions}" ItemTemplate="{StaticResource NavItemTemplate}" Focusable="False" />
-                    </ScrollViewer>
-                </Grid>
 
                 <StackPanel Grid.Row="4">
                     <Button Content="Import from folders" Command="{Binding ImportFoldersCommand}" Style="{StaticResource GhostButton}" Margin="0,0,0,4"
@@ -341,13 +341,34 @@
             </Grid>
 
             <StackPanel Grid.Row="2">
-                <ItemsControl ItemsSource="{Binding StatusFilters}" ItemTemplate="{StaticResource StatusFilterTemplate}" Margin="0,15,0,5" Focusable="False">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <WrapPanel />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                </ItemsControl>
+                <Grid Margin="0,15,0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="70" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="STATUS" Style="{StaticResource SectionLabel}" Margin="0,9,0,0" />
+                    <ItemsControl Grid.Column="1" ItemsSource="{Binding StatusFilters}" ItemTemplate="{StaticResource StatusFilterTemplate}" Focusable="False">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+                    <TextBlock Grid.Row="1" Text="POSITION" Style="{StaticResource SectionLabel}" Margin="0,9,0,0"
+                               Visibility="{Binding HasPositionFilters, Converter={StaticResource VisibleWhenTrue}}" />
+                    <ItemsControl Grid.Row="1" Grid.Column="1" ItemsSource="{Binding PositionFilters}" ItemTemplate="{StaticResource StatusFilterTemplate}"
+                                  Focusable="False" Visibility="{Binding HasPositionFilters, Converter={StaticResource VisibleWhenTrue}}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+                </Grid>
                 <Grid Margin="0,0,0,16">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />

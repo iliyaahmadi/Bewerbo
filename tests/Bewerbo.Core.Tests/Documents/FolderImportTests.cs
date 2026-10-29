@@ -13,7 +13,7 @@ public class FolderImportTests
             new FolderCandidate("Leer GmbH", Path.Combine("root", "Leer GmbH"), 0, null),
         };
 
-        var applications = FolderImport.CreateApplications(candidates, "  Fachinformatiker ", ApplicationType.Ausbildung, ApplicationStatus.Applied, TestData.Now);
+        var applications = FolderImport.CreateApplications(candidates, "  Fachinformatiker ", "Ausbildung", ApplicationStatus.Applied, TestData.Now);
 
         Assert.Equal(2, applications.Count);
         Assert.Equal("Neu AG", applications[0].Company);
@@ -28,5 +28,5 @@ public class FolderImportTests
     [Fact]
     public void Requires_a_position() =>
         Assert.Throws<ArgumentException>(() =>
-            FolderImport.CreateApplications([], " ", ApplicationType.Job, ApplicationStatus.Applied, TestData.Now));
+            FolderImport.CreateApplications([], " ", "Job", ApplicationStatus.Applied, TestData.Now));
 }

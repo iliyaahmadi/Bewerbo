@@ -63,14 +63,27 @@
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
                 <StackPanel>
-                    <TextBlock Text="Application type" Style="{StaticResource FieldLabel}" Margin="0,0,0,6" />
-                    <ComboBox ItemsSource="{Binding Types}" SelectedItem="{Binding Type}" />
+                    <TextBlock Text="Type" Style="{StaticResource FieldLabel}" Margin="0,0,0,6" />
+                    <TextBox Text="{Binding Type, UpdateSourceTrigger=PropertyChanged}" MaxLength="60" />
                 </StackPanel>
                 <StackPanel Grid.Column="2">
                     <TextBlock Text="Status" Style="{StaticResource FieldLabel}" Margin="0,0,0,6" />
                     <ComboBox ItemsSource="{Binding Statuses}" SelectedItem="{Binding Status}" />
                 </StackPanel>
             </Grid>
+            <ItemsControl ItemsSource="{Binding TypeSuggestions}" Margin="0,8,0,0" Focusable="False">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:Suggestion}">
+                        <Button Content="{Binding Name}" Command="{Binding Command}" Style="{StaticResource GhostButton}"
+                                FontSize="11" FontWeight="Normal" Padding="8,4" Margin="0,0,4,0" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
             <TextBlock Text="The same position, type and status are used for every folder. You can edit each application afterwards."
                        Style="{StaticResource HintText}" TextWrapping="Wrap" />
             <TextBlock Text="{Binding Error}" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap" Margin="0,10,0,0" />

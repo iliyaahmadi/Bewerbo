@@ -16,6 +16,7 @@ public sealed class EditorViewModel : ObservableObject
         JobApplication? original,
         Func<JobApplication, bool> save,
         Func<JobApplication, bool> delete,
+        IReadOnlyList<string>? typeSuggestions = null,
         DocumentsViewModel? documents = null,
         string? newFolderNote = null)
     {
@@ -24,6 +25,9 @@ public sealed class EditorViewModel : ObservableObject
         _save = save;
         _delete = delete;
         Documents = documents;
+        TypeSuggestions = (typeSuggestions ?? ApplicationTypes.Suggestions)
+            .Select(type => new Suggestion(type, new RelayCommand(() => Type = type)))
+            .ToList();
         NewFolderNote = newFolderNote;
         SaveCommand = new RelayCommand(Save);
         DeleteCommand = new RelayCommand(Delete);
@@ -36,7 +40,8 @@ public sealed class EditorViewModel : ObservableObject
 
     public bool CanDelete => _original is not null;
 
-    public IReadOnlyList<ApplicationType> Types { get; } = Enum.GetValues<ApplicationType>();
+    /// <summary>Types already in use, offered as one-click choices under the type field.</summary>
+    public IReadOnlyList<Suggestion> TypeSuggestions { get; }
 
     public IReadOnlyList<ApplicationStatus> Statuses { get; } = Enum.GetValues<ApplicationStatus>();
 
@@ -49,6 +54,8 @@ public sealed class EditorViewModel : ObservableObject
     public DocumentsViewModel? Documents { get; }
 
     public bool HasDocuments => Documents is not null;
+
+    public bool ShowDocumentsHint => Documents is null;
 
     /// <summary>Tells the user where the folder for a new application will be created, or null when no folder is created.</summary>
     public string? NewFolderNote { get; }
@@ -78,7 +85,7 @@ public sealed class EditorViewModel : ObservableObject
 
     public string Position { get => _draft.Position; set => Set(value, v => _draft.Position = v, _draft.Position); }
 
-    public ApplicationType Type { get => _draft.Type; set => Set(value, v => _draft.Type = v, _draft.Type); }
+    public string Type { get => _draft.Type; set => Set(value, v => _draft.Type = v, _draft.Type); }
 
     public ApplicationStatus Status { get => _draft.Status; set => Set(value, v => _draft.Status = v, _draft.Status); }
 
@@ -139,3 +146,5 @@ public sealed class EditorViewModel : ObservableObject
         OnPropertyChanged(name);
     }
 }
+
+public sealed record Suggestion(string Name, System.Windows.Input.ICommand Command);

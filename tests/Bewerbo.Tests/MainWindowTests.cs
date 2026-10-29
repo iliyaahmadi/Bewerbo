@@ -33,6 +33,7 @@ public class MainWindowTests
             Source = new Uri("pack://application:,,,/Bewerbo;component/Themes/Controls.xaml"),
         });
         ThemeManager.Apply(app, AppTheme.Dark);
+        InputBehavior.Register();
 
         var dialogs = new FakeDialogService();
         var window = new MainWindow();
@@ -44,19 +45,22 @@ public class MainWindowTests
 
         Assert.Equal(4, main.Cards.Count);
         Assert.Equal(3, main.Summary.Remaining);
-        Assert.Equal(2, main.Positions.Count);
+        Assert.Equal(["All applications", "Ausbildung", "Job"], main.Categories.Select(c => c.Label));
+        Assert.Equal(["All", "Fachinformatiker für Systemintegration", "Backend Developer (.NET)"], main.PositionFilters.Select(p => p.Label));
+        Assert.True(main.HasPositionFilters);
 
         main.Categories[2].Command.Execute(null);
         Render(window);
-        Assert.Equal("Jobs", main.Title);
+        Assert.Equal("Job", main.Title);
+        Assert.False(main.HasPositionFilters);
         Assert.Single(main.Cards);
 
         main.Cards[0].Status = ApplicationStatus.Offer;
         Render(window);
-        Assert.Equal(ApplicationStatus.Offer, store.Load().Single(a => a.Type == ApplicationType.Job).Status);
+        Assert.Equal(ApplicationStatus.Offer, store.Load().Single(a => a.Type == "Job").Status);
 
         main.ClearFiltersCommand.Execute(null);
-        main.Positions[0].Command.Execute(null);
+        main.PositionFilters[1].Command.Execute(null);
         Render(window);
         Assert.Equal(3, main.Cards.Count);
 
@@ -134,14 +138,25 @@ public class MainWindowTests
         Assert.Equal(new DateOnly(2026, 9, 14), imported.AppliedOn);
         Assert.Equal(["Anschreiben_Altes_Werk.pdf"], Directory.GetFiles(existing).Select(Path.GetFileName));
 
-        // A new application gets its own folder with the standard documents.
+        // A new application gets its own folder with the user's own CV and the other standard documents.
+        var ownCv = Path.Combine(folder, "CV_Neue_Firma.pdf");
+        File.WriteAllText(ownCv, "tailored cv");
         main.AddCommand.Execute(null);
-        dialogs.LastEditor!.Paste("Company: Neue Firma\nPosition: Fachinformatiker für Systemintegration");
-        Assert.True(dialogs.LastEditor.HasNewFolderNote);
-        dialogs.LastEditor.SaveCommand.Execute(null);
+        var newEditor = dialogs.LastEditor!;
+        newEditor.Paste("Company: Neue Firma\nPosition: Fachinformatiker für Systemintegration\nType: Werkstudent");
+        Assert.True(newEditor.HasNewFolderNote);
+        Assert.Equal(["Ausbildung", "Job"], newEditor.TypeSuggestions.Select(t => t.Name));
+        newEditor.Documents!.Add([ownCv]);
+        Assert.True(Assert.Single(newEditor.Documents.Files).IsNew);
+        var newEditorWindow = new EditorWindow(newEditor) { Owner = window };
+        newEditorWindow.Show();
+        Render(newEditorWindow);
+        Snap(newEditorWindow, Path.Combine(screenshots, "editor-new-documents-light.png"));
+        newEditor.SaveCommand.Execute(null);
         var newFolder = Path.Combine(documents, "Neue Firma");
         Assert.Equal(newFolder, store.Load().Single(a => a.Company == "Neue Firma").Folder);
-        Assert.True(File.Exists(Path.Combine(newFolder, "Lebenslauf.pdf")));
+        Assert.Equal(["CV_Neue_Firma.pdf", "Zeugnisse.pdf"], Directory.GetFiles(newFolder).Select(Path.GetFileName).Order());
+        Assert.Contains("Werkstudent", main.Categories.Select(c => c.Label));
 
         // Dropping a file on a card copies it into the company folder.
         var letter = Path.Combine(folder, "Anschreiben.pdf");
@@ -181,7 +196,7 @@ public class MainWindowTests
     private static List<JobApplication> SampleApplications()
     {
         var created = new DateTime(2026, 10, 1, 9, 0, 0, DateTimeKind.Utc);
-        JobApplication Make(string company, string position, ApplicationType type, ApplicationStatus status, int day) => new()
+        JobApplication Make(string company, string position, string type, ApplicationStatus status, int day) => new()
         {
             Id = Guid.NewGuid().ToString(),
             Company = company,
@@ -192,7 +207,7 @@ public class MainWindowTests
             Updated = created.AddDays(day),
         };
 
-        var interviewing = Make("Nordlicht IT", "Fachinformatiker für Systemintegration", ApplicationType.Ausbildung, ApplicationStatus.Interviewing, 1);
+        var interviewing = Make("Nordlicht IT", "Fachinformatiker für Systemintegration", "Ausbildung", ApplicationStatus.Interviewing, 1);
         interviewing.Location = "Hamburg";
         interviewing.AppliedOn = new DateOnly(2026, 10, 2);
         interviewing.FollowUpOn = DateOnly.FromDateTime(DateTime.Today);
@@ -202,9 +217,9 @@ public class MainWindowTests
         return
         [
             interviewing,
-            Make("Grünwerk", "Fachinformatiker für Systemintegration", ApplicationType.Ausbildung, ApplicationStatus.Applied, 2),
-            Make("Stadtwerke Nord", "Fachinformatiker für Systemintegration", ApplicationType.Ausbildung, ApplicationStatus.Rejected, 3),
-            Make("Studio North", "Backend Developer (.NET)", ApplicationType.Job, ApplicationStatus.Applied, 4),
+            Make("Grünwerk", "Fachinformatiker für Systemintegration", "Ausbildung", ApplicationStatus.Applied, 2),
+            Make("Stadtwerke Nord", "Fachinformatiker für Systemintegration", "Ausbildung", ApplicationStatus.Rejected, 3),
+            Make("Studio North", "Backend Developer (.NET)", "Job", ApplicationStatus.Applied, 4),
         ];
     }
 

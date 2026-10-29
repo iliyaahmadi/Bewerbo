@@ -4,13 +4,15 @@ namespace Bewerbo.Core.Documents;
 /// The documents folder: one subfolder per company with the files sent to it.
 /// Bewerbo only creates folders and copies files in. It never deletes, moves or overwrites a file.
 /// </summary>
-public sealed class DocumentLibrary(string root, string standardDocumentsFolder = "")
+public sealed class DocumentLibrary(string root, string standardDocumentsFolder = "", IReadOnlyList<ChecklistItem>? checklist = null)
 {
     private static readonly HashSet<string> IgnoredFiles = new(StringComparer.OrdinalIgnoreCase) { "desktop.ini", "thumbs.db", ".ds_store" };
 
     public string Root { get; } = root;
 
     public string StandardDocumentsFolder { get; } = standardDocumentsFolder;
+
+    public IReadOnlyList<ChecklistItem> Checklist { get; } = checklist ?? DocumentChecklist.Default;
 
     /// <summary>A folder name for the company that Windows accepts.</summary>
     public static string FolderName(string company)
@@ -36,7 +38,7 @@ public sealed class DocumentLibrary(string root, string standardDocumentsFolder 
                 && !file.Name.StartsWith("~$", StringComparison.Ordinal)
                 && !file.Attributes.HasFlag(FileAttributes.Hidden))
             .OrderBy(file => file.Name, StringComparer.CurrentCultureIgnoreCase)
-            .Select(file => new DocumentFile(file.FullName, DocumentClassifier.Classify(file.Name), file.Length, file.LastWriteTime))
+            .Select(file => new DocumentFile(file.FullName, file.Length, file.LastWriteTime))
             .ToList();
     }
 
@@ -44,8 +46,10 @@ public sealed class DocumentLibrary(string root, string standardDocumentsFolder 
     /// Creates the folder and copies the standard documents into it. A folder that already exists is left as it is,
     /// so linking an application to a folder made by hand never adds files to it.
     /// </summary>
+    /// <param name="ownFiles">Files the user brings for this application, such as their own cover letter.
+    /// A standard document is not copied when every checklist item it covers is covered by these files.</param>
     /// <returns>The folder path.</returns>
-    public string Prepare(string folder)
+    public string Prepare(string folder, IReadOnlyCollection<string>? ownFiles = null)
     {
         if (Directory.Exists(folder))
             return folder;
@@ -54,7 +58,8 @@ public sealed class DocumentLibrary(string root, string standardDocumentsFolder 
         if (StandardDocumentsFolder.Length == 0 || !Directory.Exists(StandardDocumentsFolder))
             return folder;
 
-        foreach (var document in List(StandardDocumentsFolder))
+        var provided = Checklist.Where(item => ownFiles?.Any(file => item.Matches(Path.GetFileName(file))) == true).ToList();
+        foreach (var document in List(StandardDocumentsFolder).Where(d => !IsReplacedBy(d, provided)))
         {
             File.Copy(document.Path, Path.Combine(folder, document.Name));
         }
@@ -62,7 +67,7 @@ public sealed class DocumentLibrary(string root, string standardDocumentsFolder 
         return folder;
     }
 
-    /// <summary>Copies files into the folder. A file whose name is taken gets a number, like "Anschreiben (2).pdf".</summary>
+    /// <summary>Copies files into the folder. A file whose name is taken gets a number, like "Cover letter (2).pdf".</summary>
     /// <returns>The paths of the new copies.</returns>
     public static List<string> AddFiles(string folder, IEnumerable<string> files)
     {
@@ -104,6 +109,19 @@ public sealed class DocumentLibrary(string root, string standardDocumentsFolder 
             })
             .OrderBy(candidate => candidate.Company, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
+    }
+
+    /// <summary>Which checklist items the files cover.</summary>
+    public IReadOnlyList<(ChecklistItem Item, bool IsPresent)> Check(IEnumerable<DocumentFile> files)
+    {
+        var names = files.Select(f => f.Name).ToList();
+        return Checklist.Select(item => (item, names.Any(item.Matches))).ToList();
+    }
+
+    private bool IsReplacedBy(DocumentFile document, List<ChecklistItem> provided)
+    {
+        var covers = Checklist.Where(item => item.Matches(document.Name)).ToList();
+        return covers.Count > 0 && covers.All(provided.Contains);
     }
 
     private bool IsStandardDocumentsFolder(string path) =>

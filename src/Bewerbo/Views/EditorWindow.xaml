@@ -11,7 +11,8 @@
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
         Background="{DynamicResource SidebarBrush}"
         Foreground="{DynamicResource TextBrush}"
-        FontFamily="Segoe UI">
+        FontFamily="Segoe UI"
+        AllowDrop="True" DragEnter="OnDragOver" DragOver="OnDragOver" DragLeave="OnDragLeave" Drop="OnDrop">
 
     <Grid Margin="28">
         <Grid.RowDefinitions>
@@ -68,14 +69,29 @@
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
                     <StackPanel>
-                        <TextBlock Text="Application type" Style="{StaticResource FieldLabel}" Margin="0,0,0,6" />
-                        <ComboBox ItemsSource="{Binding Types}" SelectedItem="{Binding Type}" />
+                        <TextBlock Text="Type" Style="{StaticResource FieldLabel}" Margin="0,0,0,6" />
+                        <TextBox Text="{Binding Type, UpdateSourceTrigger=PropertyChanged}" MaxLength="60"
+                                 ToolTip="Anything you like, such as Job, Ausbildung, Internship or Werkstudent" />
                     </StackPanel>
                     <StackPanel Grid.Column="2">
                         <TextBlock Text="Status" Style="{StaticResource FieldLabel}" Margin="0,0,0,6" />
                         <ComboBox ItemsSource="{Binding Statuses}" SelectedItem="{Binding Status}" />
                     </StackPanel>
                 </Grid>
+
+                <ItemsControl ItemsSource="{Binding TypeSuggestions}" Margin="0,8,0,0" Focusable="False">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:Suggestion}">
+                            <Button Content="{Binding Name}" Command="{Binding Command}" Style="{StaticResource GhostButton}"
+                                    FontSize="11" FontWeight="Normal" Padding="8,4" Margin="0,0,4,0" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
 
                 <TextBlock Text="Location" Style="{StaticResource FieldLabel}" />
                 <TextBox Text="{Binding Location, UpdateSourceTrigger=PropertyChanged}" MaxLength="200" />
@@ -109,37 +125,52 @@
                          TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" MaxLength="20000" VerticalContentAlignment="Top" />
 
                 <StackPanel Visibility="{Binding HasDocuments, Converter={StaticResource VisibleWhenTrue}}">
-                    <TextBlock Text="Documents" Style="{StaticResource FieldLabel}" />
-                    <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
-                            CornerRadius="8" Padding="6">
-                        <StackPanel>
-                            <ItemsControl ItemsSource="{Binding Documents.Files}" Focusable="False">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate DataType="{x:Type vm:DocumentItem}">
-                                        <Button Content="{Binding Name}" Command="{Binding OpenCommand}" ToolTip="Open"
-                                                Style="{StaticResource GhostButton}" HorizontalContentAlignment="Left"
-                                                FontWeight="Normal" Padding="10,6" />
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                            <TextBlock Text="No files yet. Add them here, or drop them on the card in the main window." Margin="10,6"
-                                       Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"
-                                       Visibility="{Binding Documents.IsEmpty, Converter={StaticResource VisibleWhenTrue}}" />
-                        </StackPanel>
-                    </Border>
-                    <Grid Margin="0,8,0,0">
+                    <Grid Margin="0,15,0,6">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="{Binding Documents.Folder}" ToolTip="{Binding Documents.Folder}" Style="{StaticResource HintText}"
-                                   TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="0,0,12,0" />
+                        <TextBlock Text="Documents" Foreground="{DynamicResource TextBodyBrush}" VerticalAlignment="Center" />
                         <Button Grid.Column="1" Content="Open folder" Command="{Binding Documents.OpenFolderCommand}" Style="{StaticResource GhostButton}"
-                                FontSize="12" Padding="10,6" />
+                                FontSize="12" Padding="10,6" Visibility="{Binding Documents.HasFolder, Converter={StaticResource VisibleWhenTrue}}" />
                         <Button Grid.Column="2" Content="Add files…" Command="{Binding Documents.AddFilesCommand}" FontSize="12" Padding="10,6" Margin="6,0,0,0" />
                     </Grid>
+                    <Border x:Name="DropZone" Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                            CornerRadius="8" Padding="6" MinHeight="58">
+                        <StackPanel>
+                            <ItemsControl ItemsSource="{Binding Documents.Files}" Focusable="False">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type vm:DocumentItem}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <Button Content="{Binding Name}" Command="{Binding OpenCommand}" ToolTip="Open"
+                                                    Style="{StaticResource GhostButton}" HorizontalContentAlignment="Left"
+                                                    FontWeight="Normal" Padding="10,6" />
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal" Visibility="{Binding IsNew, Converter={StaticResource VisibleWhenTrue}}">
+                                                <TextBlock Text="copied on save" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+                                                <Button Content="✕" ToolTip="Don't add this file" Command="{Binding RemoveCommand}" Style="{StaticResource GhostButton}"
+                                                        FontSize="11" FontWeight="Normal" Padding="8,4" Margin="4,0,0,0" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock Text="Drop your cover letter, CV or other files here, or use Add files." Margin="10,10" HorizontalAlignment="Center"
+                                       Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"
+                                       Visibility="{Binding Documents.IsEmpty, Converter={StaticResource VisibleWhenTrue}}" />
+                        </StackPanel>
+                    </Border>
+                    <TextBlock Text="{Binding Documents.Folder}" ToolTip="{Binding Documents.Folder}" Style="{StaticResource HintText}"
+                               TextTrimming="CharacterEllipsis" Visibility="{Binding Documents.HasFolder, Converter={StaticResource VisibleWhenTrue}}" />
                 </StackPanel>
+
+                <TextBlock Text="To keep your cover letter and CV with each application, choose a documents folder in Settings."
+                           Style="{StaticResource HintText}" TextWrapping="Wrap" Margin="0,16,0,0"
+                           Visibility="{Binding ShowDocumentsHint, Converter={StaticResource VisibleWhenTrue}}" />
 
                 <TextBlock Text="{Binding NewFolderNote}" Style="{StaticResource HintText}" TextWrapping="Wrap" Margin="0,16,0,0"
                            Visibility="{Binding HasNewFolderNote, Converter={StaticResource VisibleWhenTrue}}" />

@@ -7,62 +7,85 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=vm:SettingsViewModel}"
         Title="Settings"
-        Width="600" SizeToContent="Height" ResizeMode="NoResize"
+        Width="620" Height="820" MinWidth="520" MinHeight="500"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
         Background="{DynamicResource SidebarBrush}"
         Foreground="{DynamicResource TextBrush}"
         FontFamily="Segoe UI">
 
-    <StackPanel Margin="28">
-        <TextBlock Text="Settings" FontSize="25" FontWeight="SemiBold" />
+    <Grid Margin="28">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
 
-        <TextBlock Text="APPEARANCE" Style="{StaticResource SectionLabel}" Margin="0,24,0,10" />
-        <UniformGrid Columns="3">
-            <RadioButton Style="{StaticResource ChoiceTile}" Content="Match Windows" IsChecked="{Binding UseSystemTheme}" Margin="0,0,8,0" />
-            <RadioButton Style="{StaticResource ChoiceTile}" Content="Light" IsChecked="{Binding UseLightTheme}" Margin="4,0,4,0" />
-            <RadioButton Style="{StaticResource ChoiceTile}" Content="Dark" IsChecked="{Binding UseDarkTheme}" Margin="8,0,0,0" />
-        </UniformGrid>
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Margin="0,0,10,0">
+                <TextBlock Text="Settings" FontSize="25" FontWeight="SemiBold" />
 
-        <TextBlock Text="DOCUMENTS" Style="{StaticResource SectionLabel}" Margin="0,28,0,4" />
-        <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextMutedBrush}" FontSize="12">
-            Bewerbo keeps one folder per company in your documents folder and shows on each card what you sent.
-            It only creates folders and copies files in. It never deletes, moves or overwrites anything.
-        </TextBlock>
+                <TextBlock Text="APPEARANCE" Style="{StaticResource SectionLabel}" Margin="0,24,0,10" />
+                <UniformGrid Columns="3">
+                    <RadioButton Style="{StaticResource ChoiceTile}" Content="Match Windows" IsChecked="{Binding UseSystemTheme}" Margin="0,0,8,0" />
+                    <RadioButton Style="{StaticResource ChoiceTile}" Content="Light" IsChecked="{Binding UseLightTheme}" Margin="4,0,4,0" />
+                    <RadioButton Style="{StaticResource ChoiceTile}" Content="Dark" IsChecked="{Binding UseDarkTheme}" Margin="8,0,0,0" />
+                </UniformGrid>
 
-        <TextBlock Text="Documents folder" Style="{StaticResource FieldLabel}" />
-        <Grid>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <TextBox Text="{Binding DocumentsFolder, UpdateSourceTrigger=PropertyChanged}" />
-            <Button Grid.Column="1" Content="Browse…" Command="{Binding BrowseDocumentsCommand}" Margin="8,0,0,0" />
-            <Button Grid.Column="2" Content="✕" ToolTip="Turn the documents features off" Command="{Binding ClearDocumentsCommand}"
-                    Style="{StaticResource GhostButton}" Margin="4,0,0,0" Padding="10"
-                    Visibility="{Binding HasDocumentsFolder, Converter={StaticResource VisibleWhenTrue}}" />
-        </Grid>
-        <TextBlock Text="For example Documents\Bewerbungen, with a folder like “Siemens” for each company." Style="{StaticResource HintText}" />
+                <TextBlock Text="DOCUMENTS" Style="{StaticResource SectionLabel}" Margin="0,28,0,4" />
+                <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextMutedBrush}" FontSize="12">
+                    Bewerbo keeps one folder per company in your documents folder and shows on each card what you sent.
+                    It only creates folders and copies files in. It never deletes, moves or overwrites anything.
+                </TextBlock>
 
-        <TextBlock Text="Standard documents" Style="{StaticResource FieldLabel}" />
-        <Grid>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <TextBox Text="{Binding StandardDocumentsFolder, UpdateSourceTrigger=PropertyChanged}" />
-            <Button Grid.Column="1" Content="Browse…" Command="{Binding BrowseStandardDocumentsCommand}" Margin="8,0,0,0" />
-            <Button Grid.Column="2" Content="✕" ToolTip="Don't copy standard documents" Command="{Binding ClearStandardDocumentsCommand}"
-                    Style="{StaticResource GhostButton}" Margin="4,0,0,0" Padding="10"
-                    Visibility="{Binding HasStandardDocumentsFolder, Converter={StaticResource VisibleWhenTrue}}" />
-        </Grid>
-        <TextBlock Text="Optional. Files you send with every application, such as your CV and certificates. New company folders start with a copy."
-                   Style="{StaticResource HintText}" TextWrapping="Wrap" />
+                <TextBlock Text="Documents folder" Style="{StaticResource FieldLabel}" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox Text="{Binding DocumentsFolder, UpdateSourceTrigger=PropertyChanged}" />
+                    <Button Grid.Column="1" Content="Browse…" Command="{Binding BrowseDocumentsCommand}" Margin="8,0,0,0" />
+                    <Button Grid.Column="2" Content="✕" ToolTip="Turn the documents features off" Command="{Binding ClearDocumentsCommand}"
+                            Style="{StaticResource GhostButton}" Margin="4,0,0,0" Padding="10"
+                            Visibility="{Binding HasDocumentsFolder, Converter={StaticResource VisibleWhenTrue}}" />
+                </Grid>
+                <TextBlock Text="For example Documents\Bewerbungen, with a folder like “Siemens” for each company." Style="{StaticResource HintText}" />
 
-        <CheckBox Content="Create a company folder when I add an application" IsChecked="{Binding CreateFolderForNewApplications}" Margin="0,20,0,0" />
+                <TextBlock Text="Standard documents" Style="{StaticResource FieldLabel}" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox Text="{Binding StandardDocumentsFolder, UpdateSourceTrigger=PropertyChanged}" />
+                    <Button Grid.Column="1" Content="Browse…" Command="{Binding BrowseStandardDocumentsCommand}" Margin="8,0,0,0" />
+                    <Button Grid.Column="2" Content="✕" ToolTip="Don't copy standard documents" Command="{Binding ClearStandardDocumentsCommand}"
+                            Style="{StaticResource GhostButton}" Margin="4,0,0,0" Padding="10"
+                            Visibility="{Binding HasStandardDocumentsFolder, Converter={StaticResource VisibleWhenTrue}}" />
+                </Grid>
+                <TextBlock Text="Optional. Files you send with every application, such as your CV and certificates. New company folders start with a copy."
+                           Style="{StaticResource HintText}" TextWrapping="Wrap" />
 
-        <Grid Margin="0,30,0,0">
+                <CheckBox Content="Create a company folder when I add an application" IsChecked="{Binding CreateFolderForNewApplications}" Margin="0,20,0,0" />
+
+                <Grid Margin="0,20,0,6">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Document checklist" Foreground="{DynamicResource TextBodyBrush}" VerticalAlignment="Bottom" />
+                    <Button Grid.Column="1" Content="Reset" Command="{Binding ResetChecklistCommand}" Style="{StaticResource GhostButton}"
+                            FontSize="11" Padding="8,4" ToolTip="Go back to cover letter, CV and certificates" />
+                </Grid>
+                <TextBox Text="{Binding ChecklistText, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap"
+                         Height="120" VerticalContentAlignment="Top" VerticalScrollBarVisibility="Auto" FontSize="13" />
+                <TextBlock Style="{StaticResource HintText}" TextWrapping="Wrap"
+                           Text="One document per line, as Name: words in the file name. Each card shows ✓ for a document when a file in the company folder contains one of its words. Add your own, for example “Portfolio: portfolio, arbeitsproben”." />
+            </StackPanel>
+        </ScrollViewer>
+
+        <Grid Grid.Row="1" Margin="0,20,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
@@ -72,5 +95,5 @@
             <Button Grid.Column="1" Content="Cancel" IsCancel="True" />
             <Button Grid.Column="3" Content="Save settings" Command="{Binding SaveCommand}" Style="{StaticResource PrimaryButton}" IsDefault="True" />
         </Grid>
-    </StackPanel>
+    </Grid>
 </Window>

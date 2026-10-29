@@ -1,4 +1,5 @@
 using Bewerbo.Core;
+using Bewerbo.Core.Documents;
 using Bewerbo.Services;
 
 namespace Bewerbo.ViewModels;
@@ -8,10 +9,13 @@ public sealed class SettingsViewModel : ObservableObject
     private readonly Settings _settings;
     private readonly IDialogService _dialogs;
     private readonly Func<Settings, bool> _save;
+    private string _checklistText;
 
     public SettingsViewModel(Settings settings, IDialogService dialogs, Func<Settings, bool> save)
     {
         _settings = settings.Clone();
+        _checklistText = DocumentChecklist.ToText(settings.Checklist);
+        ResetChecklistCommand = new RelayCommand(() => ChecklistText = DocumentChecklist.ToText(DocumentChecklist.Default));
         _dialogs = dialogs;
         _save = save;
         BrowseDocumentsCommand = new RelayCommand(() =>
@@ -81,6 +85,11 @@ public sealed class SettingsViewModel : ObservableObject
 
     public RelayCommand ClearStandardDocumentsCommand { get; }
 
+    /// <summary>One document per line, as "Name: words in the file name".</summary>
+    public string ChecklistText { get => _checklistText; set => SetProperty(ref _checklistText, value); }
+
+    public RelayCommand ResetChecklistCommand { get; }
+
     public RelayCommand SaveCommand { get; }
 
     private string? Pick(string title, string current) =>
@@ -99,7 +108,9 @@ public sealed class SettingsViewModel : ObservableObject
 
     private void Save()
     {
-        if (_save(_settings.Clone()))
+        var settings = _settings.Clone();
+        settings.Checklist = DocumentChecklist.Parse(ChecklistText);
+        if (_save(settings))
             CloseRequested?.Invoke(this, EventArgs.Empty);
     }
 }

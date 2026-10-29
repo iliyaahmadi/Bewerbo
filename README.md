@@ -5,24 +5,25 @@
 A small Windows app for keeping track of job and Ausbildung applications.
 
 I built Bewerbo for my own applications in Germany: one place to see where I applied, what the status is,
-when to follow up, and how many applications are still open for each position. Everything stays on your
+when to follow up, which documents I sent, and how many applications are still open for each position. Everything stays on your
 computer in a single JSON file. There is no account and no server.
 
 ## Features
 
 - **Applications at a glance.** Each card shows the company, position, type, salary, dates, notes and
   the company's website icon. Change the status straight from the card.
-- **Overview.** The sidebar counts open applications by Ausbildung and job, plus interviews, offers,
-  follow-ups that are due, and rejections.
-- **Positions.** Applications are grouped by position with a count for each, so you can see how many
-  went out for every role.
-- **Search, filter and sort** by type, position, status, company, notes or location.
+- **Your own types.** Give each application any type you like, such as Job, Ausbildung, Internship or
+  Werkstudent. The sidebar lists every type with a count.
+- **Overview.** Open applications per type, plus interviews, offers, follow-ups that are due, and rejections.
+- **Search, filter and sort** by type, status, position, company, notes or location. Positions are grouped
+  with a count for each, so you can see how many went out for every role.
 - **Documents.** Point Bewerbo at the folder where you keep one subfolder per company (for example
-  `Documents\Bewerbungen\Siemens`). Each card then shows whether the Anschreiben, Lebenslauf and Zeugnisse are
-  there, opens the folder with one click, and copies files you drop on it into the folder. New applications get
-  their own folder with a copy of your standard documents, and **Import from folders** turns company folders you
-  already have into applications. Bewerbo only creates folders and copies files in; it never deletes, moves or
-  overwrites anything.
+  `Documents\Applications\Siemens`). Add your cover letter and CV for each application right in the form, or drop
+  files on its card. Each card shows which documents of your checklist are in the folder (cover letter, CV and
+  certificates by default; add your own in Settings) and opens the folder with one click. New folders start with
+  a copy of your standard documents, minus the ones you brought yourself. **Import from folders** turns company
+  folders you already have into applications. Bewerbo only creates folders and copies files in; it never deletes,
+  moves or overwrites anything.
 - **Paste details.** Copy a block like the one below and press `Ctrl+V` in the main window, or use
   **Paste details** in the form, and Bewerbo fills everything in. When the form opens with such a block on the
   clipboard, it offers to fill it in. **Copy prompt** in the form copies a short prompt for a chat assistant so

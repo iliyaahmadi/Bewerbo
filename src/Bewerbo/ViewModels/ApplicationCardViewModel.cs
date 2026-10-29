@@ -14,8 +14,10 @@ public sealed class ApplicationCardViewModel : ObservableObject
     private ApplicationStatus _status;
     private ImageSource? _icon;
 
-    public ApplicationCardViewModel(JobApplication application, DateOnly today, FaviconCache favicons, DocumentLibrary? library, ICardActions actions)
+    /// <param name="tagColor">Colour slot 0 to 3 for the type tag.</param>
+    public ApplicationCardViewModel(JobApplication application, DateOnly today, FaviconCache favicons, DocumentLibrary? library, ICardActions actions, int tagColor = 0)
     {
+        TagColor = tagColor;
         Application = application;
         _actions = actions;
         _status = application.Status;
@@ -31,13 +33,7 @@ public sealed class ApplicationCardViewModel : ObservableObject
             var folder = library.FolderFor(application);
             HasFolder = Directory.Exists(folder);
             var files = DocumentLibrary.List(folder);
-            var kinds = files.Aggregate(DocumentKinds.None, (all, file) => all | file.Kinds);
-            Documents =
-            [
-                new DocumentStatus("Anschreiben", kinds.HasFlag(DocumentKinds.CoverLetter)),
-                new DocumentStatus("Lebenslauf", kinds.HasFlag(DocumentKinds.Resume)),
-                new DocumentStatus("Zeugnisse", kinds.HasFlag(DocumentKinds.Certificates)),
-            ];
+            Documents = library.Check(files).Select(check => new DocumentStatus(check.Item.Name, check.IsPresent)).ToList();
             FileCountText = !HasFolder ? "No folder yet" : files.Count == 1 ? "1 file" : $"{files.Count} files";
             FilesToolTip = files.Count > 0
                 ? string.Join("\n", files.Select(f => f.Name))
@@ -59,9 +55,11 @@ public sealed class ApplicationCardViewModel : ObservableObject
         .Take(2)
         .Select(word => char.ToUpperInvariant(word[0])));
 
-    public bool IsAusbildung => Application.Type == ApplicationType.Ausbildung;
+    public string TypeLabel => Application.Type;
 
-    public string TypeLabel => Application.Type.ToString();
+    public bool HasType => Application.Type.Length > 0;
+
+    public int TagColor { get; }
 
     public string Salary => Application.Salary;
 
@@ -85,7 +83,7 @@ public sealed class ApplicationCardViewModel : ObservableObject
 
     public bool HasFolder { get; }
 
-    /// <summary>Whether the cover letter, CV and certificates are in the company folder.</summary>
+    /// <summary>Which documents of the user's checklist are in the company folder.</summary>
     public IReadOnlyList<DocumentStatus> Documents { get; } = [];
 
     public string FileCountText { get; } = "";
@@ -157,5 +155,5 @@ public sealed record DocumentStatus(string Label, bool IsPresent)
 {
     public string Text => IsPresent ? "✓ " + Label : Label;
 
-    public string ToolTip => IsPresent ? Label + " is in the folder" : "No " + Label + " in the folder yet";
+    public string ToolTip => IsPresent ? $"{Label}: in the folder" : $"{Label}: not in the folder yet";
 }

@@ -9,7 +9,7 @@ public static class FolderImport
     public static List<JobApplication> CreateApplications(
         IEnumerable<FolderCandidate> candidates,
         string position,
-        ApplicationType type,
+        string type,
         ApplicationStatus status,
         DateTime utcNow)
     {
@@ -21,7 +21,7 @@ public static class FolderImport
             Id = Guid.NewGuid().ToString(),
             Company = candidate.Company,
             Position = position.Trim(),
-            Type = type,
+            Type = Labels.Clean(type),
             Status = status,
             AppliedOn = candidate.FirstFileDate,
             Folder = candidate.Path,

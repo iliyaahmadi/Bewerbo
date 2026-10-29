@@ -31,10 +31,14 @@
 
     <SolidColorBrush x:Key="InitialsBrush" Color="#E0E0E0" />
     <SolidColorBrush x:Key="InitialsTextBrush" Color="#2E2E2E" />
-    <SolidColorBrush x:Key="AusbildungTagBrush" Color="#DCFCE7" />
-    <SolidColorBrush x:Key="AusbildungTagTextBrush" Color="#166534" />
-    <SolidColorBrush x:Key="JobTagBrush" Color="#DBEAFE" />
-    <SolidColorBrush x:Key="JobTagTextBrush" Color="#1E40AF" />
+    <SolidColorBrush x:Key="Tag0Brush" Color="#DCFCE7" />
+    <SolidColorBrush x:Key="Tag0TextBrush" Color="#166534" />
+    <SolidColorBrush x:Key="Tag1Brush" Color="#DBEAFE" />
+    <SolidColorBrush x:Key="Tag1TextBrush" Color="#1E40AF" />
+    <SolidColorBrush x:Key="Tag2Brush" Color="#EDE9FE" />
+    <SolidColorBrush x:Key="Tag2TextBrush" Color="#5B21B6" />
+    <SolidColorBrush x:Key="Tag3Brush" Color="#FEF3C7" />
+    <SolidColorBrush x:Key="Tag3TextBrush" Color="#92400E" />
 
     <SolidColorBrush x:Key="StatusSavedBrush" Color="#EBEBEB" />
     <SolidColorBrush x:Key="StatusSavedTextBrush" Color="#2E2E2E" />

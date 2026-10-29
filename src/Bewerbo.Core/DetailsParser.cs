@@ -30,7 +30,7 @@ public static class DetailsParser
 
         Company:
         Position:
-        Type: Ausbildung or Job
+        Type: Job, Ausbildung, Internship or similar
         Status: Applied
         Location:
         Applied on: YYYY-MM-DD

@@ -16,7 +16,7 @@ public sealed class MainViewModel : ObservableObject, ICardActions
     private readonly Action<AppTheme> _applyTheme;
 
     private List<JobApplication> _applications;
-    private ApplicationType? _type;
+    private string? _typeKey;
     private ApplicationStatus? _status;
     private string? _positionKey;
     private string _search = "";
@@ -62,7 +62,7 @@ public sealed class MainViewModel : ObservableObject, ICardActions
 
     public ObservableCollection<NavItem> Categories { get; } = [];
 
-    public ObservableCollection<NavItem> Positions { get; } = [];
+    public ObservableCollection<NavItem> PositionFilters { get; } = [];
 
     public ObservableCollection<NavItem> StatusFilters { get; } = [];
 
@@ -146,34 +146,36 @@ public sealed class MainViewModel : ObservableObject, ICardActions
     public string EmptyTitle => HasNoApplications ? "No applications yet" : "No matching applications";
 
     public string EmptySubtitle => HasNoApplications
-        ? "Add a job or Ausbildung to start tracking it.\nCopied the details from a chat? Press Ctrl+V to fill the form in."
+        ? "Add an application to start tracking it.\nCopied the details from a chat? Press Ctrl+V to fill the form in."
         : "Try another filter or a different search.";
 
     private static DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
+
+    public bool HasPositionFilters => PositionFilters.Count > 2;
 
     private void Refresh()
     {
         Summary = ApplicationSummary.From(_applications, Today);
 
-        var inCategory = _applications.Where(a => _type is null || a.Type == _type).ToList();
-        var groups = Core.Positions.Group(inCategory);
-        if (_positionKey is not null && groups.All(g => g.Key != _positionKey))
+        var types = ApplicationTypes.Group(_applications);
+        if (_typeKey is not null && types.All(t => t.Key != _typeKey))
+            _typeKey = null;
+
+        var inType = _applications.Where(a => _typeKey is null || Labels.Key(a.Type) == _typeKey).ToList();
+        var positions = Core.Positions.Group(inType);
+        if (_positionKey is not null && positions.All(g => g.Key != _positionKey))
             _positionKey = null;
 
         Replace(Categories,
-        [
-            Category("All applications", null),
-            Category("Ausbildung", ApplicationType.Ausbildung),
-            Category("Jobs", ApplicationType.Job),
-        ]);
+            types.Select(type => new NavItem(type.Name, type.Count, type.Key == _typeKey, new RelayCommand(() => SelectType(type.Key))))
+                .Prepend(new NavItem("All applications", _applications.Count, _typeKey is null, new RelayCommand(() => SelectType(null)))));
 
-        Replace(Positions, groups.Select(group => new NavItem(
-            group.Name,
-            group.Count,
-            group.Key == _positionKey,
-            new RelayCommand(() => SelectPosition(group.Key)))));
+        Replace(PositionFilters,
+            positions.Select(group => new NavItem(group.Name, group.Count, group.Key == _positionKey, new RelayCommand(() => SelectPosition(group.Key))))
+                .Prepend(new NavItem("All", inType.Count, _positionKey is null, new RelayCommand(() => SelectPosition(null)))));
+        OnPropertyChanged(nameof(HasPositionFilters));
 
-        var inPosition = inCategory.Where(a => _positionKey is null || Core.Positions.Key(a.Position) == _positionKey).ToList();
+        var inPosition = inType.Where(a => _positionKey is null || Core.Positions.Key(a.Position) == _positionKey).ToList();
         Replace(StatusFilters,
             new ApplicationStatus?[] { null }.Concat(Enum.GetValues<ApplicationStatus>().Cast<ApplicationStatus?>())
                 .Select(status => new NavItem(
@@ -182,19 +184,15 @@ public sealed class MainViewModel : ObservableObject, ICardActions
                     status == _status,
                     new RelayCommand(() => SelectStatus(status)))));
 
-        var filter = new ApplicationFilter(_type, _status, _positionKey, _search);
+        var filter = new ApplicationFilter(_typeKey, _status, _positionKey, _search);
         var today = Today;
+        var allTypes = types.Select(t => t.Name).ToList();
         Replace(Cards, ApplicationQuery.Run(_applications, filter, _sort.Order)
-            .Select(a => new ApplicationCardViewModel(a, today, _favicons, _library, this)));
+            .Select(a => new ApplicationCardViewModel(a, today, _favicons, _library, this, ApplicationTypes.ColorIndex(a.Type, allTypes))));
 
-        Title = _positionKey is not null
-            ? groups.First(g => g.Key == _positionKey).Name
-            : _type switch
-            {
-                ApplicationType.Ausbildung => "Ausbildung",
-                ApplicationType.Job => "Jobs",
-                _ => "All applications",
-            };
+        Title = positions.FirstOrDefault(g => g.Key == _positionKey)?.Name
+            ?? types.FirstOrDefault(t => t.Key == _typeKey)?.Name
+            ?? "All applications";
 
         HasResults = Cards.Count > 0;
         OnPropertyChanged(nameof(HasNoApplications));
@@ -203,22 +201,16 @@ public sealed class MainViewModel : ObservableObject, ICardActions
         Footer = $"{Cards.Count} application{(Cards.Count == 1 ? "" : "s")} shown · Changes save automatically";
     }
 
-    private NavItem Category(string label, ApplicationType? type) => new(
-        label,
-        _applications.Count(a => type is null || a.Type == type),
-        _type == type && _positionKey is null,
-        new RelayCommand(() => SelectCategory(type)));
-
-    private void SelectCategory(ApplicationType? type)
+    private void SelectType(string? key)
     {
-        _type = type;
+        _typeKey = key;
         _positionKey = null;
         Refresh();
     }
 
-    private void SelectPosition(string key)
+    private void SelectPosition(string? key)
     {
-        _positionKey = _positionKey == key ? null : key;
+        _positionKey = key;
         Refresh();
     }
 
@@ -230,7 +222,7 @@ public sealed class MainViewModel : ObservableObject, ICardActions
 
     private void ClearFilters()
     {
-        _type = null;
+        _typeKey = null;
         _status = null;
         _positionKey = null;
         _search = "";
@@ -279,7 +271,7 @@ public sealed class MainViewModel : ObservableObject, ICardActions
             return;
         }
 
-        if (LinkFolder(application) is not { } folder)
+        if (LinkFolder(application, files) is not { } folder)
             return;
 
         try
@@ -316,59 +308,69 @@ public sealed class MainViewModel : ObservableObject, ICardActions
 
     private EditorViewModel NewEditor()
     {
-        var draft = ApplicationDraft.ForNew(_type ?? ApplicationType.Ausbildung, Today);
-        var note = CreatesFolders ? $"A folder for the documents is created in {_library!.Root} when you save." : null;
-        return new EditorViewModel(draft, null, SaveNew, Delete, newFolderNote: note);
+        var types = ApplicationTypes.Group(_applications);
+        var type = types.FirstOrDefault(t => t.Key == _typeKey)?.Name ?? types.FirstOrDefault()?.Name ?? ApplicationTypes.Suggestions[0];
+        var documents = _library is null ? null : NewDocuments(null, null);
+        var note = _library is not null && _settings.CreateFolderForNewApplications
+            ? $"A folder for this company is created in {_library.Root} when you save."
+            : null;
+
+        return new EditorViewModel(
+            ApplicationDraft.ForNew(type, Today),
+            null,
+            application => SaveWithDocuments(application, documents?.PendingFiles ?? [], isNew: true),
+            Delete,
+            TypeSuggestions(types),
+            documents,
+            note);
     }
 
     public void Edit(JobApplication application)
     {
-        DocumentsViewModel? documents = null;
-        if (_library is not null)
-        {
-            documents = new DocumentsViewModel(
-                _library.FolderFor(application),
-                _dialogs.OpenPath,
-                () => OpenFolder(Current(application)),
-                () =>
-                {
-                    var files = _dialogs.PickFiles("Add documents to " + application.Company);
-                    if (files.Count == 0)
-                        return false;
-
-                    AddFiles(Current(application), files);
-                    return true;
-                });
-        }
-
-        _dialogs.ShowEditor(new EditorViewModel(ApplicationDraft.From(application), application, SaveEdited, Delete, documents));
+        var documents = _library is null ? null : NewDocuments(_library.FolderFor(application), application);
+        _dialogs.ShowEditor(new EditorViewModel(
+            ApplicationDraft.From(application),
+            application,
+            edited => SaveWithDocuments(edited, documents?.PendingFiles ?? [], isNew: false),
+            Delete,
+            TypeSuggestions(ApplicationTypes.Group(_applications)),
+            documents));
     }
 
-    private bool CreatesFolders => _library is not null && _settings.CreateFolderForNewApplications;
+    private static IReadOnlyList<string> TypeSuggestions(List<LabelGroup> types) =>
+        types.Count > 0 ? types.Select(t => t.Name).ToList() : ApplicationTypes.Suggestions;
 
-    private bool SaveNew(JobApplication application)
-    {
-        if (CreatesFolders)
+    private DocumentsViewModel NewDocuments(string? folder, JobApplication? application) => new(
+        folder,
+        () => _dialogs.PickFiles("Add documents"),
+        _dialogs.OpenPath,
+        () =>
         {
-            var folder = _library!.FolderFor(application);
+            if (application is not null)
+                OpenFolder(Current(application));
+        });
+
+    /// <summary>Saves the application and copies the files added in the editor into its folder.</summary>
+    private bool SaveWithDocuments(JobApplication application, IReadOnlyList<string> files, bool isNew)
+    {
+        // The folder can be linked while the editor is open, which the editor's copy does not know about.
+        if (!isNew && application.Folder.Length == 0)
+            application.Folder = Current(application).Folder;
+
+        if (_library is not null && (files.Count > 0 || (isNew && _settings.CreateFolderForNewApplications)))
+        {
             try
             {
-                application.Folder = _library.Prepare(folder);
+                var folder = _library.Prepare(_library.FolderFor(application), files);
+                application.Folder = folder;
+                DocumentLibrary.AddFiles(folder, files);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
-                _dialogs.ShowError($"The application is saved, but its folder could not be created.\n\n{ex.Message}", "Unable to create folder");
+                _dialogs.ShowError($"The application is saved, but its documents could not be copied.\n\n{ex.Message}", "Unable to copy documents");
             }
         }
 
-        return Upsert(application);
-    }
-
-    private bool SaveEdited(JobApplication application)
-    {
-        // The folder can be linked while the editor is open, which the editor's copy does not know about.
-        if (application.Folder.Length == 0)
-            application.Folder = Current(application).Folder;
         return Upsert(application);
     }
 
@@ -377,7 +379,7 @@ public sealed class MainViewModel : ObservableObject, ICardActions
 
     /// <summary>Creates the application's folder if needed and remembers it on the application.</summary>
     /// <returns>The folder, or null when there is no documents folder or it could not be created.</returns>
-    private string? LinkFolder(JobApplication application)
+    private string? LinkFolder(JobApplication application, IReadOnlyCollection<string>? ownFiles = null)
     {
         if (_library is null)
             return null;
@@ -385,7 +387,7 @@ public sealed class MainViewModel : ObservableObject, ICardActions
         var folder = _library.FolderFor(application);
         try
         {
-            _library.Prepare(folder);
+            _library.Prepare(folder, ownFiles);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -449,14 +451,11 @@ public sealed class MainViewModel : ObservableObject, ICardActions
             return;
         }
 
-        var commonPosition = _applications
-            .Where(a => a.Type == ApplicationType.Ausbildung)
-            .GroupBy(a => a.Position)
-            .OrderByDescending(g => g.Count())
-            .Select(g => g.Key)
-            .FirstOrDefault() ?? "";
+        var types = ApplicationTypes.Group(_applications);
+        var type = types.FirstOrDefault(t => t.Key == _typeKey)?.Name ?? types.FirstOrDefault()?.Name ?? "";
+        var position = Core.Positions.Group(_applications.Where(a => Labels.Key(a.Type) == Labels.Key(type))).FirstOrDefault()?.Name ?? "";
 
-        _dialogs.ShowFolderImport(new FolderImportViewModel(candidates, commonPosition, created =>
+        _dialogs.ShowFolderImport(new FolderImportViewModel(candidates, position, type, TypeSuggestions(types), created =>
         {
             if (!Commit([.. _applications, .. created]))
                 return false;
@@ -467,7 +466,7 @@ public sealed class MainViewModel : ObservableObject, ICardActions
     }
 
     private static DocumentLibrary? CreateLibrary(Settings settings) =>
-        settings.HasDocumentsFolder ? new DocumentLibrary(settings.DocumentsFolder, settings.StandardDocumentsFolder) : null;
+        settings.HasDocumentsFolder ? new DocumentLibrary(settings.DocumentsFolder, settings.StandardDocumentsFolder, settings.Checklist) : null;
 
     private void Export()
     {

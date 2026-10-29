@@ -64,12 +64,12 @@ public sealed class ApplicationStore(string filePath)
                 || !ids.Add(application.Id)
                 || string.IsNullOrWhiteSpace(application.Company)
                 || string.IsNullOrWhiteSpace(application.Position)
-                || !Enum.IsDefined(application.Type)
                 || !Enum.IsDefined(application.Status))
             {
                 throw new InvalidDataException("The backup contains an incomplete or invalid application.");
             }
 
+            application.Type = application.Type?.Trim() ?? "";
             application.Location ??= "";
             application.Salary ??= "";
             application.Link ??= "";

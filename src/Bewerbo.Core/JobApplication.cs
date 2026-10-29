@@ -5,7 +5,8 @@ public sealed class JobApplication
     public string Id { get; set; } = "";
     public string Company { get; set; } = "";
     public string Position { get; set; } = "";
-    public ApplicationType Type { get; set; }
+    /// <summary>Free text chosen by the user, such as "Job", "Ausbildung" or "Internship". May be empty.</summary>
+    public string Type { get; set; } = "";
     public ApplicationStatus Status { get; set; }
     public string Location { get; set; } = "";
     public DateOnly? AppliedOn { get; set; }
