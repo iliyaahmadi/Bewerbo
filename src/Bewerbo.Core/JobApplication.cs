@@ -13,6 +13,9 @@ public sealed class JobApplication
     public string Salary { get; set; } = "";
     public string Link { get; set; } = "";
     public string Notes { get; set; } = "";
+
+    /// <summary>Full path of the folder with the documents sent for this application, or empty when none is linked.</summary>
+    public string Folder { get; set; } = "";
     public DateTime Created { get; set; }
     public DateTime Updated { get; set; }
 

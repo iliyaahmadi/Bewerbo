@@ -14,6 +14,7 @@ public class ApplicationStoreTests
         original.Location = "Berlin";
         original.AppliedOn = new DateOnly(2026, 9, 1);
         original.Link = "https://example.com/jobs";
+        original.Folder = @"C:\Users\Example\Documents\Bewerbungen\Müller & Söhne";
 
         store.Save([original]);
         var loaded = Assert.Single(store.Load());
@@ -21,6 +22,7 @@ public class ApplicationStoreTests
         Assert.Equal(original.Company, loaded.Company);
         Assert.Equal(original.Notes, loaded.Notes);
         Assert.Equal(original.AppliedOn, loaded.AppliedOn);
+        Assert.Equal(original.Folder, loaded.Folder);
         Assert.Null(loaded.FollowUpOn);
         Assert.Equal(original.Created, loaded.Created);
         Assert.Equal(DateTimeKind.Utc, loaded.Created.Kind);
@@ -60,6 +62,7 @@ public class ApplicationStoreTests
         Assert.Equal(ApplicationStatus.Saved, applications[0].Status);
         Assert.Equal("", applications[0].Location);
         Assert.Null(applications[0].AppliedOn);
+        Assert.Equal("", applications[0].Folder);
         Assert.Equal(new DateTime(2026, 9, 6, 10, 0, 0, DateTimeKind.Utc), applications[0].Created);
     }
 

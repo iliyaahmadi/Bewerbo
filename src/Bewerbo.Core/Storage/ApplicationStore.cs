@@ -74,6 +74,7 @@ public sealed class ApplicationStore(string filePath)
             application.Salary ??= "";
             application.Link ??= "";
             application.Notes ??= "";
+            application.Folder ??= "";
         }
 
         return applications;
