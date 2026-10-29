@@ -1,0 +1,350 @@
+<Window x:Class="Bewerbo.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:Bewerbo.ViewModels"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance Type=vm:MainViewModel}"
+        Title="Bewerbo — Application tracker"
+        Icon="/Assets/Bewerbo.ico"
+        Width="1240" Height="850" MinWidth="1000" MinHeight="650"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource WindowBrush}"
+        Foreground="{StaticResource TextBrush}"
+        FontFamily="Segoe UI">
+
+    <Window.InputBindings>
+        <KeyBinding Gesture="Ctrl+N" Command="{Binding AddCommand}" />
+    </Window.InputBindings>
+
+    <Window.Resources>
+        <DataTemplate x:Key="NavItemTemplate" DataType="{x:Type vm:NavItem}">
+            <Button Style="{StaticResource NavButton}" Command="{Binding Command}" ToolTip="{Binding Label}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Grid.Column="1" Text="{Binding Count}" Margin="10,0,0,0" FontSize="12" FontWeight="Normal"
+                               Opacity="0.65" VerticalAlignment="Center" />
+                </Grid>
+            </Button>
+        </DataTemplate>
+
+        <DataTemplate x:Key="StatusFilterTemplate" DataType="{x:Type vm:NavItem}">
+            <Button Style="{StaticResource FilterChip}" Command="{Binding Command}">
+                <TextBlock>
+                    <Run Text="{Binding Label, Mode=OneWay}" /><Run Text="  " /><Run Text="{Binding Count, Mode=OneWay}" />
+                </TextBlock>
+            </Button>
+        </DataTemplate>
+
+        <DataTemplate x:Key="CardTemplate" DataType="{x:Type vm:ApplicationCardViewModel}">
+            <Border Background="{StaticResource CardBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                    CornerRadius="12" Padding="20,18,20,16" Margin="0,0,0,12">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="52" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <Border Width="40" Height="40" CornerRadius="11" VerticalAlignment="Top">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="{StaticResource ControlHoverBrush}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasIcon}" Value="True">
+                                        <Setter Property="Background" Value="White" />
+                                        <Setter Property="Padding" Value="7" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <Grid>
+                            <TextBlock Text="{Binding Initials}" FontSize="15" FontWeight="SemiBold" Foreground="White"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding HasIcon}" Value="True">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <Image Source="{Binding Icon}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"
+                                   Visibility="{Binding HasIcon, Converter={StaticResource VisibleWhenTrue}}" />
+                        </Grid>
+                    </Border>
+
+                    <StackPanel Grid.Column="1" Margin="0,0,20,0">
+                        <TextBlock Text="{Binding Company}" ToolTip="{Binding Company}" FontSize="17" FontWeight="SemiBold"
+                                   TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="{Binding Position}" ToolTip="{Binding Position}" FontSize="14" Margin="0,4,0,10"
+                                   Foreground="{StaticResource TextSecondaryBrush}" TextTrimming="CharacterEllipsis" />
+                        <WrapPanel>
+                            <Border CornerRadius="4" Padding="7,3" Margin="0,0,10,0">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="Background" Value="{StaticResource JobTagBrush}" />
+                                        <Setter Property="TextElement.Foreground" Value="{StaticResource JobTagTextBrush}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsAusbildung}" Value="True">
+                                                <Setter Property="Background" Value="{StaticResource AusbildungTagBrush}" />
+                                                <Setter Property="TextElement.Foreground" Value="{StaticResource AusbildungTagTextBrush}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <TextBlock Text="{Binding TypeLabel}" FontSize="10" />
+                            </Border>
+                            <TextBlock Text="{Binding Salary}" FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"
+                                       Visibility="{Binding HasSalary, Converter={StaticResource VisibleWhenTrue}}" />
+                        </WrapPanel>
+                        <TextBlock Text="{Binding Details}" ToolTip="{Binding Details}" FontSize="11" Margin="0,10,0,0" TextTrimming="CharacterEllipsis"
+                                   Visibility="{Binding HasDetails, Converter={StaticResource VisibleWhenTrue}}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsFollowUpDue}" Value="True">
+                                            <Setter Property="Foreground" Value="{StaticResource WarningBrush}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <TextBlock Text="{Binding NotesPreview}" ToolTip="{Binding Notes}" FontSize="12" Margin="0,11,0,0"
+                                   Foreground="{StaticResource TextMutedBrush}" TextTrimming="CharacterEllipsis"
+                                   Visibility="{Binding HasNotes, Converter={StaticResource VisibleWhenTrue}}" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2" HorizontalAlignment="Right">
+                        <ComboBox Style="{StaticResource StatusComboBox}" ItemsSource="{Binding Statuses}" SelectedItem="{Binding Status}" />
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+                            <Button Style="{StaticResource GhostButton}" Content="Open link ↗" Command="{Binding OpenLinkCommand}"
+                                    FontSize="11" Padding="6,5" Visibility="{Binding HasLink, Converter={StaticResource VisibleWhenTrue}}" />
+                            <Button Content="Edit" Command="{Binding EditCommand}" FontSize="11" Padding="10,5" Margin="6,0,0,0" />
+                        </StackPanel>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="224" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Sidebar -->
+        <Border Background="{StaticResource SidebarBrush}" BorderBrush="{StaticResource SubtleBorderBrush}" BorderThickness="0,0,1,0">
+            <Grid Margin="22,28,22,20">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <TextBlock Text="Bewerbo" FontSize="24" FontWeight="SemiBold" Margin="9,0,0,0" />
+
+                <StackPanel Grid.Row="1" Margin="0,28,0,0">
+                    <TextBlock Text="APPLICATIONS" Style="{StaticResource SectionLabel}" Margin="10,0,0,8" />
+                    <ItemsControl ItemsSource="{Binding Categories}" ItemTemplate="{StaticResource NavItemTemplate}" Focusable="False" />
+                </StackPanel>
+
+                <Border Grid.Row="2" Background="{StaticResource WindowBrush}" BorderBrush="{StaticResource SubtleBorderBrush}" BorderThickness="1"
+                        CornerRadius="10" Padding="14,13,14,7" Margin="0,22,0,0">
+                    <StackPanel>
+                        <StackPanel.Resources>
+                            <Style x:Key="RowLabel" TargetType="TextBlock">
+                                <Setter Property="FontSize" Value="12" />
+                                <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+                            </Style>
+                            <Style x:Key="RowValue" TargetType="TextBlock">
+                                <Setter Property="Grid.Column" Value="1" />
+                                <Setter Property="FontSize" Value="12" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                            </Style>
+                            <Style TargetType="Grid">
+                                <Setter Property="Margin" Value="0,0,0,7" />
+                            </Style>
+                        </StackPanel.Resources>
+
+                        <TextBlock Text="OVERVIEW" Style="{StaticResource SectionLabel}" />
+                        <StackPanel Orientation="Horizontal" Margin="0,4,0,8">
+                            <TextBlock Text="{Binding Summary.Remaining}" FontSize="32" FontWeight="SemiBold" />
+                            <TextBlock FontSize="12" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Bottom" Margin="8,0,0,8">
+                                <Run Text="remaining of" /> <Run Text="{Binding Summary.Total, Mode=OneWay}" />
+                            </TextBlock>
+                        </StackPanel>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                            <TextBlock Text="Ausbildung" Style="{StaticResource RowLabel}" />
+                            <TextBlock Text="{Binding Summary.RemainingAusbildung}" Style="{StaticResource RowValue}" />
+                        </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                            <TextBlock Text="Jobs" Style="{StaticResource RowLabel}" />
+                            <TextBlock Text="{Binding Summary.RemainingJobs}" Style="{StaticResource RowValue}" />
+                        </Grid>
+
+                        <Border Height="1" Background="{StaticResource BorderBrush}" Margin="0,5,0,12" />
+
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                            <TextBlock Text="Interviewing" Style="{StaticResource RowLabel}" />
+                            <TextBlock Text="{Binding Summary.Interviewing}" Style="{StaticResource RowValue}" Foreground="{StaticResource WarningBrush}" />
+                        </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                            <TextBlock Text="Offers / accepted" Style="{StaticResource RowLabel}" />
+                            <TextBlock Text="{Binding Summary.OffersOrAccepted}" Style="{StaticResource RowValue}" Foreground="{StaticResource SuccessBrush}" />
+                        </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                            <TextBlock Text="Follow-ups due" Style="{StaticResource RowLabel}" />
+                            <TextBlock Text="{Binding Summary.FollowUpsDue}" Style="{StaticResource RowValue}" Foreground="{StaticResource AccentLightBrush}" />
+                        </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                            <TextBlock Text="Rejected" Style="{StaticResource RowLabel}" />
+                            <TextBlock Text="{Binding Summary.Rejected}" Style="{StaticResource RowValue}" Foreground="{StaticResource DangerBrush}" />
+                        </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                            <Grid.Style>
+                                <Style TargetType="Grid">
+                                    <Setter Property="Margin" Value="0,0,0,7" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Summary.Withdrawn}" Value="0">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Grid.Style>
+                            <TextBlock Text="Withdrawn" Style="{StaticResource RowLabel}" />
+                            <TextBlock Text="{Binding Summary.Withdrawn}" Style="{StaticResource RowValue}" Foreground="{StaticResource TextMutedBrush}" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <Grid Grid.Row="3" Margin="0,22,0,14">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="POSITIONS" Style="{StaticResource SectionLabel}" Margin="10,0,0,8" />
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <ItemsControl ItemsSource="{Binding Positions}" ItemTemplate="{StaticResource NavItemTemplate}" Focusable="False" />
+                    </ScrollViewer>
+                </Grid>
+
+                <StackPanel Grid.Row="4">
+                    <Button Content="Export backup" Command="{Binding ExportCommand}" Background="{StaticResource FieldHoverBrush}"
+                            Foreground="{StaticResource TextBodyBrush}" Margin="0,0,0,7" />
+                    <Button Content="Import backup" Command="{Binding ImportCommand}" Style="{StaticResource GhostButton}" />
+                    <TextBlock Text="Saved locally" FontSize="11" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center" Margin="0,16,0,0" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Main area -->
+        <Grid Grid.Column="1" Margin="34,28,34,19">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="SemiBold" VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis" Margin="0,0,16,0" />
+                <Button Grid.Column="1" Content="+  Add application" Command="{Binding AddCommand}" Style="{StaticResource PrimaryButton}"
+                        VerticalAlignment="Center" Padding="20,13" />
+            </Grid>
+
+            <Grid Grid.Row="1" Margin="0,25,0,0">
+                <TextBox x:Name="SearchBox" Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}" Height="44" Padding="15,9,46,9">
+                    <TextBox.InputBindings>
+                        <KeyBinding Key="Escape" Command="{Binding ClearSearchCommand}" />
+                    </TextBox.InputBindings>
+                </TextBox>
+                <TextBlock Text="Search company, position or notes…" Foreground="{StaticResource TextMutedBrush}" FontSize="13"
+                           IsHitTestVisible="False" VerticalAlignment="Center" Margin="15,0,0,0">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding HasSearch}" Value="True">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <Button Content="✕" ToolTip="Clear search (Esc)" Command="{Binding ClearSearchCommand}" Style="{StaticResource GhostButton}"
+                        HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,7,0" Width="32" Height="32" Padding="0"
+                        FontSize="12" FontWeight="Normal" Foreground="{StaticResource TextMutedBrush}"
+                        Visibility="{Binding HasSearch, Converter={StaticResource VisibleWhenTrue}}" />
+            </Grid>
+
+            <StackPanel Grid.Row="2">
+                <ItemsControl ItemsSource="{Binding StatusFilters}" ItemTemplate="{StaticResource StatusFilterTemplate}" Margin="0,15,0,5" Focusable="False">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                </ItemsControl>
+                <Grid Margin="0,0,0,16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="12" />
+                        <ColumnDefinition Width="200" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="APPLICATIONS" Style="{StaticResource SectionLabel}" VerticalAlignment="Center" />
+                    <Button Grid.Column="1" Content="Clear filters" Command="{Binding ClearFiltersCommand}" Style="{StaticResource GhostButton}"
+                            FontSize="11" Padding="10,7" />
+                    <ComboBox Grid.Column="3" ItemsSource="{Binding SortOptions}" SelectedItem="{Binding Sort}" DisplayMemberPath="Label"
+                              MinHeight="34" FontSize="12" />
+                </Grid>
+            </StackPanel>
+
+            <Grid Grid.Row="3">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,8,0"
+                              Visibility="{Binding HasResults, Converter={StaticResource VisibleWhenTrue}}">
+                    <ItemsControl ItemsSource="{Binding Cards}" ItemTemplate="{StaticResource CardTemplate}" Focusable="False" />
+                </ScrollViewer>
+
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="20"
+                            Visibility="{Binding ShowEmptyState, Converter={StaticResource VisibleWhenTrue}}">
+                    <Border Background="{StaticResource CardBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                            Width="72" Height="72" CornerRadius="22" HorizontalAlignment="Center">
+                        <TextBlock Text="+" FontSize="42" Foreground="{StaticResource AccentLightBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <TextBlock Text="{Binding EmptyTitle}" FontSize="21" FontWeight="SemiBold" TextAlignment="Center" Margin="0,20,0,0" />
+                    <TextBlock Text="{Binding EmptySubtitle}" FontSize="13" Foreground="{StaticResource TextMutedBrush}" TextAlignment="Center" Margin="0,9,0,21" />
+                    <Button Content="+  Add application" Command="{Binding AddCommand}" Style="{StaticResource PrimaryButton}" HorizontalAlignment="Center"
+                            Visibility="{Binding HasNoApplications, Converter={StaticResource VisibleWhenTrue}}" />
+                </StackPanel>
+            </Grid>
+
+            <TextBlock Grid.Row="4" Text="{Binding Footer}" FontSize="11" Foreground="{StaticResource TextMutedBrush}" Margin="0,13,0,0" />
+        </Grid>
+    </Grid>
+</Window>

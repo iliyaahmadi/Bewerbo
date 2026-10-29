@@ -1,0 +1,109 @@
+<Window x:Class="Bewerbo.Views.EditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:Bewerbo.ViewModels"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance Type=vm:EditorViewModel}"
+        Title="{Binding Title}"
+        Width="620" Height="840" MinWidth="550" MinHeight="650"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="{StaticResource SidebarBrush}"
+        Foreground="{StaticResource TextBrush}"
+        FontFamily="Segoe UI">
+
+    <Grid Margin="28">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel>
+                <TextBlock Text="{Binding Title}" FontSize="25" FontWeight="SemiBold" />
+                <TextBlock Text="Company and position are required. Everything else is optional." Foreground="{StaticResource TextMutedBrush}"
+                           TextWrapping="Wrap" Margin="0,6,0,20" />
+            </StackPanel>
+            <Button Grid.Column="1" Content="Paste details" Click="OnPasteClick" VerticalAlignment="Top" Margin="12,0,0,0" Padding="14,8"
+                    ToolTip="Fill the form from copied text with lines like Company: …, Position: …, Link: …" />
+        </Grid>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Margin="0,0,10,0">
+                <TextBlock Text="Company *" Style="{StaticResource FieldLabel}" Margin="0,0,0,6" />
+                <TextBox x:Name="CompanyBox" Text="{Binding Company, UpdateSourceTrigger=PropertyChanged}" MaxLength="200" />
+
+                <TextBlock Text="Position *" Style="{StaticResource FieldLabel}" />
+                <TextBox Text="{Binding Position, UpdateSourceTrigger=PropertyChanged}" MaxLength="250" />
+
+                <Grid Margin="0,15,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="16" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="Application type" Style="{StaticResource FieldLabel}" Margin="0,0,0,6" />
+                        <ComboBox ItemsSource="{Binding Types}" SelectedItem="{Binding Type}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="Status" Style="{StaticResource FieldLabel}" Margin="0,0,0,6" />
+                        <ComboBox ItemsSource="{Binding Statuses}" SelectedItem="{Binding Status}" />
+                    </StackPanel>
+                </Grid>
+
+                <TextBlock Text="Location" Style="{StaticResource FieldLabel}" />
+                <TextBox Text="{Binding Location, UpdateSourceTrigger=PropertyChanged}" MaxLength="200" />
+
+                <Grid Margin="0,15,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="16" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="Applied on" Style="{StaticResource FieldLabel}" Margin="0,0,0,6" />
+                        <TextBox Text="{Binding AppliedOn, UpdateSourceTrigger=PropertyChanged}" MaxLength="10" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="Follow up on" Style="{StaticResource FieldLabel}" Margin="0,0,0,6" />
+                        <TextBox Text="{Binding FollowUpOn, UpdateSourceTrigger=PropertyChanged}" MaxLength="10" />
+                    </StackPanel>
+                </Grid>
+                <TextBlock Text="Optional dates: YYYY-MM-DD (for example, 2026-09-15)" Style="{StaticResource HintText}" />
+
+                <TextBlock Text="Salary / pay" Style="{StaticResource FieldLabel}" />
+                <TextBox Text="{Binding Salary, UpdateSourceTrigger=PropertyChanged}" MaxLength="150" />
+                <TextBlock Text="For example: €1,200/month or €50,000/year" Style="{StaticResource HintText}" />
+
+                <TextBlock Text="Job link" Style="{StaticResource FieldLabel}" />
+                <TextBox Text="{Binding Link, UpdateSourceTrigger=PropertyChanged}" MaxLength="3000" />
+
+                <TextBlock Text="Notes" Style="{StaticResource FieldLabel}" />
+                <TextBox Text="{Binding Notes, UpdateSourceTrigger=PropertyChanged}" Height="110" MinHeight="110" AcceptsReturn="True"
+                         TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" MaxLength="20000" VerticalContentAlignment="Top" />
+
+                <TextBlock Text="{Binding Error}" Foreground="{StaticResource DangerBrush}" TextWrapping="Wrap" Margin="0,10,0,3" />
+            </StackPanel>
+        </ScrollViewer>
+
+        <Grid Grid.Row="2" Margin="0,20,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Button Content="Delete" Command="{Binding DeleteCommand}" Style="{StaticResource GhostButton}" Foreground="{StaticResource DangerBrush}"
+                    HorizontalAlignment="Left" Visibility="{Binding CanDelete, Converter={StaticResource VisibleWhenTrue}}" />
+            <Button Grid.Column="1" Content="Cancel" IsCancel="True" />
+            <Button Grid.Column="3" Content="Save application" Command="{Binding SaveCommand}" Style="{StaticResource PrimaryButton}" IsDefault="True" />
+        </Grid>
+    </Grid>
+</Window>

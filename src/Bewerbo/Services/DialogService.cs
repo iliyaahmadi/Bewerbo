@@ -1,0 +1,58 @@
+using System.Diagnostics;
+using System.Windows;
+using Bewerbo.Core;
+using Bewerbo.ViewModels;
+using Bewerbo.Views;
+using Microsoft.Win32;
+
+namespace Bewerbo.Services;
+
+public sealed class DialogService(Window owner) : IDialogService
+{
+    private const string BackupFilter = "Bewerbo backup (*.json)|*.json";
+
+    public void ShowEditor(EditorViewModel editor) =>
+        new EditorWindow(editor) { Owner = owner }.ShowDialog();
+
+    public bool Confirm(string message, string title) =>
+        MessageBox.Show(ActiveWindow, message, title, MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
+
+    public void ShowInfo(string message, string title) =>
+        MessageBox.Show(ActiveWindow, message, title);
+
+    public void ShowError(string message, string title) =>
+        MessageBox.Show(ActiveWindow, message, title, MessageBoxButton.OK, MessageBoxImage.Warning);
+
+    public string? PickExportFile(string suggestedName)
+    {
+        var dialog = new SaveFileDialog { Title = "Export your applications", Filter = BackupFilter, FileName = suggestedName };
+        return dialog.ShowDialog(owner) == true ? dialog.FileName : null;
+    }
+
+    public string? PickImportFile()
+    {
+        var dialog = new OpenFileDialog { Title = "Import a Bewerbo backup", Filter = BackupFilter };
+        return dialog.ShowDialog(owner) == true ? dialog.FileName : null;
+    }
+
+    public void OpenLink(string link)
+    {
+        if (!WebLink.IsValid(link))
+        {
+            ShowError("Edit this application and enter a valid https:// or http:// link.", "Invalid link");
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo(link) { UseShellExecute = true });
+        }
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
+        {
+            ShowError(ex.Message, "Unable to open link");
+        }
+    }
+
+    private Window ActiveWindow =>
+        Application.Current.Windows.OfType<Window>().FirstOrDefault(w => w.IsActive) ?? owner;
+}
