@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=vm:MainViewModel}"
         Title="Bewerbo — Application tracker"
-        Icon="/Assets/Bewerbo.ico"
+        Icon="pack://application:,,,/Bewerbo;component/Assets/Bewerbo.ico"
         Width="1240" Height="850" MinWidth="1000" MinHeight="650"
         WindowStartupLocation="CenterScreen"
         Background="{StaticResource WindowBrush}"
