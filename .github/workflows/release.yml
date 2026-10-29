@@ -1,0 +1,33 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Test
+        run: dotnet test Bewerbo.slnx -c Release
+
+      - name: Publish
+        run: dotnet publish src/Bewerbo/Bewerbo.csproj -p:PublishProfile=win-x64
+
+      - name: Package
+        shell: pwsh
+        run: Compress-Archive -Path publish/Bewerbo.exe -DestinationPath "Bewerbo-${{ github.ref_name }}-win-x64.zip"
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: Bewerbo-*.zip
+          generate_release_notes: true
