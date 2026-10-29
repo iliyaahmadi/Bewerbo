@@ -24,15 +24,18 @@ public partial class App : Application
         }
 
         DispatcherUnhandledException += OnUnhandledException;
+        InputBehavior.Register();
 
         try
         {
             DataFolder.CopyLegacyData(DataFolder.Default, DataFolder.Legacy);
             var store = new ApplicationStore(Path.Combine(DataFolder.Default, DataFolder.FileName));
+            var settings = new SettingsStore(Path.Combine(DataFolder.Default, SettingsStore.FileName));
             var favicons = new FaviconCache(Path.Combine(store.DataFolder, "icons"));
+            ThemeManager.Apply(this, settings.Load().Theme);
 
             var window = new Views.MainWindow();
-            window.DataContext = new MainViewModel(store, favicons, new DialogService(window));
+            window.DataContext = new MainViewModel(store, settings, favicons, new DialogService(window), theme => ThemeManager.Apply(this, theme));
             MainWindow = window;
             window.Show();
         }

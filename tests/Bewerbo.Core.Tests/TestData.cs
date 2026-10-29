@@ -8,7 +8,7 @@ internal static class TestData
     public static JobApplication Application(
         string company = "Example GmbH",
         string position = "Fachinformatiker für Systemintegration",
-        ApplicationType type = ApplicationType.Ausbildung,
+        string type = "Ausbildung",
         ApplicationStatus status = ApplicationStatus.Applied,
         DateTime? created = null) => new()
     {

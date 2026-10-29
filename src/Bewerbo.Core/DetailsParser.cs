@@ -23,6 +23,23 @@ public sealed record ApplicationDetails
 /// </summary>
 public static class DetailsParser
 {
+    /// <summary>Text to give a chat assistant so it answers in the format this parser reads.</summary>
+    public const string Prompt = """
+        When I tell you I applied somewhere, give me the details in a code block in exactly this format,
+        one field per line, and leave out any field you don't know:
+
+        Company:
+        Position:
+        Type: Job, Ausbildung, Internship or similar
+        Status: Applied
+        Location:
+        Applied on: YYYY-MM-DD
+        Follow up on: YYYY-MM-DD
+        Salary:
+        Link:
+        Notes:
+        """;
+
     private static readonly Dictionary<string, string> FieldNames = new(StringComparer.OrdinalIgnoreCase)
     {
         ["company"] = nameof(ApplicationDetails.Company),

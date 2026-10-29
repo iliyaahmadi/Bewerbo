@@ -5,7 +5,7 @@ public sealed class ApplicationDraft
 {
     public string Company { get; set; } = "";
     public string Position { get; set; } = "";
-    public ApplicationType Type { get; set; }
+    public string Type { get; set; } = "";
     public ApplicationStatus Status { get; set; }
     public string Location { get; set; } = "";
     public string AppliedOn { get; set; } = "";
@@ -14,7 +14,7 @@ public sealed class ApplicationDraft
     public string Link { get; set; } = "";
     public string Notes { get; set; } = "";
 
-    public static ApplicationDraft ForNew(ApplicationType type, DateOnly today) => new()
+    public static ApplicationDraft ForNew(string type, DateOnly today) => new()
     {
         Type = type,
         Status = ApplicationStatus.Applied,
@@ -35,7 +35,7 @@ public sealed class ApplicationDraft
         Notes = application.Notes,
     };
 
-    /// <summary>Copies every field found in the details. Unknown type or status names are ignored.</summary>
+    /// <summary>Copies every field found in the details. Unknown status names are ignored.</summary>
     public void Fill(ApplicationDetails details)
     {
         Company = details.Company ?? Company;
@@ -46,9 +46,7 @@ public sealed class ApplicationDraft
         Salary = details.Salary ?? Salary;
         Link = details.Link ?? Link;
         Notes = details.Notes ?? Notes;
-
-        if (Enum.TryParse<ApplicationType>(details.Type, ignoreCase: true, out var type) && Enum.IsDefined(type))
-            Type = type;
+        Type = details.Type ?? Type;
         if (Enum.TryParse<ApplicationStatus>(details.Status, ignoreCase: true, out var status) && Enum.IsDefined(status))
             Status = status;
     }
@@ -80,7 +78,7 @@ public sealed class ApplicationDraft
         var application = original?.Clone() ?? new JobApplication { Id = Guid.NewGuid().ToString(), Created = utcNow };
         application.Company = Company.Trim();
         application.Position = Position.Trim();
-        application.Type = Type;
+        application.Type = Labels.Clean(Type);
         application.Status = Status;
         application.Location = Location.Trim();
         application.AppliedOn = appliedOn ?? (Status == ApplicationStatus.Applied ? today : null);

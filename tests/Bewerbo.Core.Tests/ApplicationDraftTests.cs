@@ -5,11 +5,11 @@ public class ApplicationDraftTests
     [Fact]
     public void New_drafts_are_applied_today()
     {
-        var draft = ApplicationDraft.ForNew(ApplicationType.Job, TestData.Today);
+        var draft = ApplicationDraft.ForNew("Job", TestData.Today);
 
         Assert.Equal(ApplicationStatus.Applied, draft.Status);
         Assert.Equal("2026-10-29", draft.AppliedOn);
-        Assert.Equal(ApplicationType.Job, draft.Type);
+        Assert.Equal("Job", draft.Type);
     }
 
     [Theory]
@@ -73,15 +73,15 @@ public class ApplicationDraftTests
         Assert.Throws<InvalidOperationException>(() => new ApplicationDraft().Build(null, TestData.Now, TestData.Today));
 
     [Fact]
-    public void Fill_copies_pasted_fields_and_ignores_unknown_names()
+    public void Fill_copies_pasted_fields_and_ignores_unknown_statuses()
     {
-        var draft = ApplicationDraft.ForNew(ApplicationType.Ausbildung, TestData.Today);
+        var draft = ApplicationDraft.ForNew("Ausbildung", TestData.Today);
         draft.Salary = "kept";
 
-        draft.Fill(DetailsParser.Parse("Company: Example\nType: job\nStatus: Dreaming"));
+        draft.Fill(DetailsParser.Parse("Company: Example\nType: Werkstudent\nStatus: Dreaming"));
 
         Assert.Equal("Example", draft.Company);
-        Assert.Equal(ApplicationType.Job, draft.Type);
+        Assert.Equal("Werkstudent", draft.Type);
         Assert.Equal(ApplicationStatus.Applied, draft.Status);
         Assert.Equal("kept", draft.Salary);
     }

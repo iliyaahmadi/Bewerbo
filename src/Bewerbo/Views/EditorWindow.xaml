@@ -9,12 +9,14 @@
         Title="{Binding Title}"
         Width="620" Height="840" MinWidth="550" MinHeight="650"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
-        Background="{StaticResource SidebarBrush}"
-        Foreground="{StaticResource TextBrush}"
-        FontFamily="Segoe UI">
+        Background="{DynamicResource SidebarBrush}"
+        Foreground="{DynamicResource TextBrush}"
+        FontFamily="Segoe UI"
+        AllowDrop="True" DragEnter="OnDragOver" DragOver="OnDragOver" DragLeave="OnDragLeave" Drop="OnDrop">
 
     <Grid Margin="28">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
@@ -27,14 +29,32 @@
             </Grid.ColumnDefinitions>
             <StackPanel>
                 <TextBlock Text="{Binding Title}" FontSize="25" FontWeight="SemiBold" />
-                <TextBlock Text="Company and position are required. Everything else is optional." Foreground="{StaticResource TextMutedBrush}"
+                <TextBlock Text="Company and position are required. Everything else is optional." Foreground="{DynamicResource TextMutedBrush}"
                            TextWrapping="Wrap" Margin="0,6,0,20" />
             </StackPanel>
-            <Button Grid.Column="1" Content="Paste details" Click="OnPasteClick" VerticalAlignment="Top" Margin="12,0,0,0" Padding="14,8"
-                    ToolTip="Fill the form from copied text with lines like Company: …, Position: …, Link: …" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top" Margin="12,0,0,0">
+                <Button x:Name="CopyPromptButton" Content="Copy prompt" Click="OnCopyPromptClick" Style="{StaticResource GhostButton}" Padding="12,8"
+                        ToolTip="Copies a prompt for a chat assistant. Paste it into the chat once, and it answers every application in a format Bewerbo can read." />
+                <Button Content="Paste details" Click="OnPasteClick" Margin="6,0,0,0" Padding="14,8"
+                        ToolTip="Fill the form from copied text with lines like Company: …, Position: …, Link: … (Ctrl+V in the main window does the same)" />
+            </StackPanel>
         </Grid>
 
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <Border Grid.Row="1" Background="{DynamicResource NavActiveBrush}" BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1"
+                CornerRadius="10" Padding="16,10,10,10" Margin="0,0,0,18"
+                Visibility="{Binding HasClipboardDetails, Converter={StaticResource VisibleWhenTrue}}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="Your clipboard has application details. Fill the form in with them?" TextWrapping="Wrap" VerticalAlignment="Center" />
+                <Button Grid.Column="1" Content="Fill in" Command="{Binding FillFromClipboardCommand}" Style="{StaticResource PrimaryButton}"
+                        Padding="14,7" Margin="12,0,0,0" />
+            </Grid>
+        </Border>
+
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <StackPanel Margin="0,0,10,0">
                 <TextBlock Text="Company *" Style="{StaticResource FieldLabel}" Margin="0,0,0,6" />
                 <TextBox x:Name="CompanyBox" Text="{Binding Company, UpdateSourceTrigger=PropertyChanged}" MaxLength="200" />
@@ -49,14 +69,29 @@
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
                     <StackPanel>
-                        <TextBlock Text="Application type" Style="{StaticResource FieldLabel}" Margin="0,0,0,6" />
-                        <ComboBox ItemsSource="{Binding Types}" SelectedItem="{Binding Type}" />
+                        <TextBlock Text="Type" Style="{StaticResource FieldLabel}" Margin="0,0,0,6" />
+                        <TextBox Text="{Binding Type, UpdateSourceTrigger=PropertyChanged}" MaxLength="60"
+                                 ToolTip="Anything you like, such as Job, Ausbildung, Internship or Werkstudent" />
                     </StackPanel>
                     <StackPanel Grid.Column="2">
                         <TextBlock Text="Status" Style="{StaticResource FieldLabel}" Margin="0,0,0,6" />
                         <ComboBox ItemsSource="{Binding Statuses}" SelectedItem="{Binding Status}" />
                     </StackPanel>
                 </Grid>
+
+                <ItemsControl ItemsSource="{Binding TypeSuggestions}" Margin="0,8,0,0" Focusable="False">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:Suggestion}">
+                            <Button Content="{Binding Name}" Command="{Binding Command}" Style="{StaticResource GhostButton}"
+                                    FontSize="11" FontWeight="Normal" Padding="8,4" Margin="0,0,4,0" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
 
                 <TextBlock Text="Location" Style="{StaticResource FieldLabel}" />
                 <TextBox Text="{Binding Location, UpdateSourceTrigger=PropertyChanged}" MaxLength="200" />
@@ -89,18 +124,69 @@
                 <TextBox Text="{Binding Notes, UpdateSourceTrigger=PropertyChanged}" Height="110" MinHeight="110" AcceptsReturn="True"
                          TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" MaxLength="20000" VerticalContentAlignment="Top" />
 
-                <TextBlock Text="{Binding Error}" Foreground="{StaticResource DangerBrush}" TextWrapping="Wrap" Margin="0,10,0,3" />
+                <StackPanel Visibility="{Binding HasDocuments, Converter={StaticResource VisibleWhenTrue}}">
+                    <Grid Margin="0,15,0,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Documents" Foreground="{DynamicResource TextBodyBrush}" VerticalAlignment="Center" />
+                        <Button Grid.Column="1" Content="Open folder" Command="{Binding Documents.OpenFolderCommand}" Style="{StaticResource GhostButton}"
+                                FontSize="12" Padding="10,6" Visibility="{Binding Documents.HasFolder, Converter={StaticResource VisibleWhenTrue}}" />
+                        <Button Grid.Column="2" Content="Add files…" Command="{Binding Documents.AddFilesCommand}" FontSize="12" Padding="10,6" Margin="6,0,0,0" />
+                    </Grid>
+                    <Border x:Name="DropZone" Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                            CornerRadius="8" Padding="6" MinHeight="58">
+                        <StackPanel>
+                            <ItemsControl ItemsSource="{Binding Documents.Files}" Focusable="False">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type vm:DocumentItem}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <Button Content="{Binding Name}" Command="{Binding OpenCommand}" ToolTip="Open"
+                                                    Style="{StaticResource GhostButton}" HorizontalContentAlignment="Left"
+                                                    FontWeight="Normal" Padding="10,6" />
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal" Visibility="{Binding IsNew, Converter={StaticResource VisibleWhenTrue}}">
+                                                <TextBlock Text="copied on save" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+                                                <Button Content="✕" ToolTip="Don't add this file" Command="{Binding RemoveCommand}" Style="{StaticResource GhostButton}"
+                                                        FontSize="11" FontWeight="Normal" Padding="8,4" Margin="4,0,0,0" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock Text="Drop your cover letter, CV or other files here, or use Add files." Margin="10,10" HorizontalAlignment="Center"
+                                       Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"
+                                       Visibility="{Binding Documents.IsEmpty, Converter={StaticResource VisibleWhenTrue}}" />
+                        </StackPanel>
+                    </Border>
+                    <TextBlock Text="{Binding Documents.Folder}" ToolTip="{Binding Documents.Folder}" Style="{StaticResource HintText}"
+                               TextTrimming="CharacterEllipsis" Visibility="{Binding Documents.HasFolder, Converter={StaticResource VisibleWhenTrue}}" />
+                </StackPanel>
+
+                <TextBlock Text="To keep your cover letter and CV with each application, choose a documents folder in Settings."
+                           Style="{StaticResource HintText}" TextWrapping="Wrap" Margin="0,16,0,0"
+                           Visibility="{Binding ShowDocumentsHint, Converter={StaticResource VisibleWhenTrue}}" />
+
+                <TextBlock Text="{Binding NewFolderNote}" Style="{StaticResource HintText}" TextWrapping="Wrap" Margin="0,16,0,0"
+                           Visibility="{Binding HasNewFolderNote, Converter={StaticResource VisibleWhenTrue}}" />
+
+                <TextBlock Text="{Binding Error}" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap" Margin="0,10,0,3" />
             </StackPanel>
         </ScrollViewer>
 
-        <Grid Grid.Row="2" Margin="0,20,0,0">
+        <Grid Grid.Row="3" Margin="0,20,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="12" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <Button Content="Delete" Command="{Binding DeleteCommand}" Style="{StaticResource GhostButton}" Foreground="{StaticResource DangerBrush}"
+            <Button Content="Delete" Command="{Binding DeleteCommand}" Style="{StaticResource GhostButton}" Foreground="{DynamicResource DangerBrush}"
                     HorizontalAlignment="Left" Visibility="{Binding CanDelete, Converter={StaticResource VisibleWhenTrue}}" />
             <Button Grid.Column="1" Content="Cancel" IsCancel="True" />
             <Button Grid.Column="3" Content="Save application" Command="{Binding SaveCommand}" Style="{StaticResource PrimaryButton}" IsDefault="True" />

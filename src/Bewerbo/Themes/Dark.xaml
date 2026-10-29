@@ -23,14 +23,36 @@
 
     <SolidColorBrush x:Key="AccentBrush" Color="#3B82F6" />
     <SolidColorBrush x:Key="AccentLightBrush" Color="#60A5FA" />
+    <SolidColorBrush x:Key="OnAccentBrush" Color="#FFFFFF" />
     <SolidColorBrush x:Key="SelectionBrush" Color="#2563EB" />
     <SolidColorBrush x:Key="SuccessBrush" Color="#23A55A" />
     <SolidColorBrush x:Key="WarningBrush" Color="#F0B232" />
     <SolidColorBrush x:Key="DangerBrush" Color="#F87171" />
 
-    <SolidColorBrush x:Key="AusbildungTagBrush" Color="#1A3A27" />
-    <SolidColorBrush x:Key="AusbildungTagTextBrush" Color="#57F287" />
-    <SolidColorBrush x:Key="JobTagBrush" Color="#1E3A5F" />
-    <SolidColorBrush x:Key="JobTagTextBrush" Color="#93C5FD" />
+    <SolidColorBrush x:Key="InitialsBrush" Color="#404040" />
+    <SolidColorBrush x:Key="InitialsTextBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="Tag0Brush" Color="#1A3A27" />
+    <SolidColorBrush x:Key="Tag0TextBrush" Color="#57F287" />
+    <SolidColorBrush x:Key="Tag1Brush" Color="#1E3A5F" />
+    <SolidColorBrush x:Key="Tag1TextBrush" Color="#93C5FD" />
+    <SolidColorBrush x:Key="Tag2Brush" Color="#33264D" />
+    <SolidColorBrush x:Key="Tag2TextBrush" Color="#C4B5FD" />
+    <SolidColorBrush x:Key="Tag3Brush" Color="#3F3014" />
+    <SolidColorBrush x:Key="Tag3TextBrush" Color="#FCD34D" />
+
+    <SolidColorBrush x:Key="StatusSavedBrush" Color="#303030" />
+    <SolidColorBrush x:Key="StatusSavedTextBrush" Color="#DDDDDD" />
+    <SolidColorBrush x:Key="StatusAppliedBrush" Color="#1E3A5F" />
+    <SolidColorBrush x:Key="StatusAppliedTextBrush" Color="#93C5FD" />
+    <SolidColorBrush x:Key="StatusInterviewingBrush" Color="#4A3B13" />
+    <SolidColorBrush x:Key="StatusInterviewingTextBrush" Color="#F0B232" />
+    <SolidColorBrush x:Key="StatusOfferBrush" Color="#14432A" />
+    <SolidColorBrush x:Key="StatusOfferTextBrush" Color="#86EFAC" />
+    <SolidColorBrush x:Key="StatusAcceptedBrush" Color="#23A55A" />
+    <SolidColorBrush x:Key="StatusAcceptedTextBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="StatusRejectedBrush" Color="#4C1D1F" />
+    <SolidColorBrush x:Key="StatusRejectedTextBrush" Color="#F87171" />
+    <SolidColorBrush x:Key="StatusWithdrawnBrush" Color="#303030" />
+    <SolidColorBrush x:Key="StatusWithdrawnTextBrush" Color="#8E8E8E" />
 
 </ResourceDictionary>

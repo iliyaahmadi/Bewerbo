@@ -14,6 +14,7 @@ public class ApplicationStoreTests
         original.Location = "Berlin";
         original.AppliedOn = new DateOnly(2026, 9, 1);
         original.Link = "https://example.com/jobs";
+        original.Folder = @"C:\Users\Example\Documents\Bewerbungen\Müller & Söhne";
 
         store.Save([original]);
         var loaded = Assert.Single(store.Load());
@@ -21,6 +22,7 @@ public class ApplicationStoreTests
         Assert.Equal(original.Company, loaded.Company);
         Assert.Equal(original.Notes, loaded.Notes);
         Assert.Equal(original.AppliedOn, loaded.AppliedOn);
+        Assert.Equal(original.Folder, loaded.Folder);
         Assert.Null(loaded.FollowUpOn);
         Assert.Equal(original.Created, loaded.Created);
         Assert.Equal(DateTimeKind.Utc, loaded.Created.Kind);
@@ -56,10 +58,11 @@ public class ApplicationStoreTests
         var applications = ApplicationStore.Deserialize(json);
 
         Assert.Equal(2, applications.Count);
-        Assert.Equal(ApplicationType.Ausbildung, applications[0].Type);
+        Assert.Equal("Ausbildung", applications[0].Type);
         Assert.Equal(ApplicationStatus.Saved, applications[0].Status);
         Assert.Equal("", applications[0].Location);
         Assert.Null(applications[0].AppliedOn);
+        Assert.Equal("", applications[0].Folder);
         Assert.Equal(new DateTime(2026, 9, 6, 10, 0, 0, DateTimeKind.Utc), applications[0].Created);
     }
 
@@ -78,11 +81,22 @@ public class ApplicationStoreTests
     [InlineData("not json")]
     [InlineData("""{"Version":2,"Applications":[]}""")]
     [InlineData("""{"Version":1,"Applications":[{"Id":"1","Company":"","Position":"x","Type":"Job","Status":"Saved"}]}""")]
-    [InlineData("""{"Version":1,"Applications":[{"Id":"1","Company":"a","Position":"x","Type":"Internship","Status":"Saved"}]}""")]
+    [InlineData("""{"Version":1,"Applications":[{"Id":"1","Company":"a","Position":"x","Type":"Job","Status":"Dreaming"}]}""")]
     [InlineData("""{"Version":1,"Applications":[{"Id":"1","Company":"a","Position":"x","Type":"Job","Status":"Saved","AppliedOn":"2026-02-30"}]}""")]
     [InlineData("""{"Version":1,"Applications":[{"Id":"1","Company":"a","Position":"x","Type":"Job","Status":"Saved"},{"Id":"1","Company":"b","Position":"y","Type":"Job","Status":"Saved"}]}""")]
     public void Rejects_invalid_backups(string json) =>
         Assert.Throws<InvalidDataException>(() => ApplicationStore.Deserialize(json));
+
+    [Fact]
+    public void Keeps_any_application_type()
+    {
+        var json = """{"Version":1,"Applications":[{"Id":"1","Company":"a","Position":"x","Type":" Werkstudent ","Status":"Saved"},{"Id":"2","Company":"b","Position":"y","Status":"Saved"}]}""";
+
+        var applications = ApplicationStore.Deserialize(json);
+
+        Assert.Equal("Werkstudent", applications[0].Type);
+        Assert.Equal("", applications[1].Type);
+    }
 
     [Fact]
     public void Merge_adds_only_new_applications()

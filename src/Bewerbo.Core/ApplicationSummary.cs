@@ -7,8 +7,7 @@ namespace Bewerbo.Core;
 public sealed record ApplicationSummary(
     int Total,
     int Remaining,
-    int RemainingAusbildung,
-    int RemainingJobs,
+    IReadOnlyList<LabelGroup> RemainingByType,
     int Interviewing,
     int OffersOrAccepted,
     int FollowUpsDue,
@@ -21,8 +20,7 @@ public sealed record ApplicationSummary(
         return new ApplicationSummary(
             Total: applications.Count,
             Remaining: remaining.Count,
-            RemainingAusbildung: remaining.Count(a => a.Type == ApplicationType.Ausbildung),
-            RemainingJobs: remaining.Count(a => a.Type == ApplicationType.Job),
+            RemainingByType: ApplicationTypes.Group(remaining),
             Interviewing: applications.Count(a => a.Status == ApplicationStatus.Interviewing),
             OffersOrAccepted: applications.Count(a => a.Status is ApplicationStatus.Offer or ApplicationStatus.Accepted),
             FollowUpsDue: applications.Count(a => a.IsFollowUpDue(today)),

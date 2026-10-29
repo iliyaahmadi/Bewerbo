@@ -10,13 +10,13 @@ public enum SortOrder
 
 /// <summary>Null means "any" for every criterion.</summary>
 public sealed record ApplicationFilter(
-    ApplicationType? Type = null,
+    string? TypeKey = null,
     ApplicationStatus? Status = null,
     string? PositionKey = null,
     string? Search = null)
 {
     public bool Matches(JobApplication application) =>
-        (Type is null || application.Type == Type)
+        (TypeKey is null || Labels.Key(application.Type) == TypeKey)
         && (Status is null || application.Status == Status)
         && (PositionKey is null || Positions.Key(application.Position) == PositionKey)
         && MatchesSearch(application);
@@ -27,7 +27,7 @@ public sealed record ApplicationFilter(
         if (string.IsNullOrEmpty(search))
             return true;
 
-        string[] fields = [application.Company, application.Position, application.Location, application.Notes, application.Status.ToString(), application.Type.ToString()];
+        string[] fields = [application.Company, application.Position, application.Location, application.Notes, application.Status.ToString(), application.Type];
         return fields.Any(field => field.Contains(search, StringComparison.OrdinalIgnoreCase));
     }
 }

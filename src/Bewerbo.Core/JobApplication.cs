@@ -5,7 +5,8 @@ public sealed class JobApplication
     public string Id { get; set; } = "";
     public string Company { get; set; } = "";
     public string Position { get; set; } = "";
-    public ApplicationType Type { get; set; }
+    /// <summary>Free text chosen by the user, such as "Job", "Ausbildung" or "Internship". May be empty.</summary>
+    public string Type { get; set; } = "";
     public ApplicationStatus Status { get; set; }
     public string Location { get; set; } = "";
     public DateOnly? AppliedOn { get; set; }
@@ -13,6 +14,9 @@ public sealed class JobApplication
     public string Salary { get; set; } = "";
     public string Link { get; set; } = "";
     public string Notes { get; set; } = "";
+
+    /// <summary>Full path of the folder with the documents sent for this application, or empty when none is linked.</summary>
+    public string Folder { get; set; } = "";
     public DateTime Created { get; set; }
     public DateTime Updated { get; set; }
 
