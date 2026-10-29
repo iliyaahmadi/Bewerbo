@@ -46,8 +46,7 @@ public class MainWindowTests
         Assert.Equal(4, main.Cards.Count);
         Assert.Equal(3, main.Summary.Remaining);
         Assert.Equal(["All applications", "Ausbildung", "Job"], main.Categories.Select(c => c.Label));
-        Assert.Equal(["All positions", "Fachinformatiker für Systemintegration", "Backend Developer (.NET)"], main.PositionFilters.Select(p => p.Label));
-        Assert.True(main.HasPositions);
+        Assert.Equal("Advanced filters…", main.SortOptions[^1].Label);
 
         main.Categories[2].Command.Execute(null);
         Render(window);
@@ -58,13 +57,35 @@ public class MainWindowTests
         Render(window);
         Assert.Equal(ApplicationStatus.Offer, store.Load().Single(a => a.Type == "Job").Status);
 
+        // Advanced filters: picking the last sort entry keeps the sort order and opens the filters window.
         main.ClearFiltersCommand.Execute(null);
-        main.IsFiltersOpen = true;
-        main.PositionFilters[1].Command.Execute(null);
-        Assert.False(main.IsFiltersOpen);
-        Assert.Equal("Fachinformatiker für Systemintegration", main.ActivePosition);
+        var sort = main.Sort;
+        dialogs.OnFilters = filters =>
+        {
+            Assert.Equal(["Fachinformatiker für Systemintegration", "Backend Developer (.NET)"], filters.Positions.Select(p => p.Name));
+            var filtersWindow = new FiltersWindow(filters) { Owner = window };
+            filtersWindow.Show();
+            filters.Positions[0].IsSelected = true;
+            filters.AppliedFrom = "not a date";
+            Render(filtersWindow);
+            filters.ApplyCommand.Execute(null);
+            Assert.NotEmpty(filters.Error);
+            filters.AppliedFrom = "";
+            Snap(filtersWindow, Path.Combine(screenshots, "filters.png"));
+            filters.ApplyCommand.Execute(null);
+            Assert.False(filtersWindow.IsVisible);
+        };
+        main.Sort = main.SortOptions[^1];
+        Assert.Same(sort, main.Sort);
         Render(window);
+        Assert.True(main.HasAdvancedFilters);
+        Assert.Equal("1 filter", main.AdvancedFiltersLabel);
+        Assert.Equal("Fachinformatiker für Systemintegration", main.Title);
         Assert.Equal(3, main.Cards.Count);
+        Snap(window, Path.Combine(screenshots, "main-filtered.png"));
+        main.ClearAdvancedCommand.Execute(null);
+        Assert.False(main.HasAdvancedFilters);
+        Assert.Equal(4, main.Cards.Count);
 
         main.ClearFiltersCommand.Execute(null);
         main.AddCommand.Execute(null);
@@ -134,7 +155,7 @@ public class MainWindowTests
 
         Assert.False(ThemeManager.IsDark);
         Assert.Equal(AppTheme.Light, settingsStore.Load().Theme);
-        Assert.True(main.HasDocumentsFolder);
+        Assert.Equal(documents, main.DocumentsFolder);
         var imported = store.Load().Single(a => a.Company == "Altes Werk");
         Assert.Equal(existing, imported.Folder);
         Assert.Equal(new DateOnly(2026, 9, 14), imported.AppliedOn);

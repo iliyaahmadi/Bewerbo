@@ -12,13 +12,14 @@ public enum SortOrder
 public sealed record ApplicationFilter(
     string? TypeKey = null,
     ApplicationStatus? Status = null,
-    string? PositionKey = null,
-    string? Search = null)
+    AdvancedFilter? Advanced = null,
+    string? Search = null,
+    DateOnly Today = default)
 {
     public bool Matches(JobApplication application) =>
         (TypeKey is null || Labels.Key(application.Type) == TypeKey)
         && (Status is null || application.Status == Status)
-        && (PositionKey is null || Positions.Key(application.Position) == PositionKey)
+        && (Advanced is null || Advanced.Matches(application, Today))
         && MatchesSearch(application);
 
     private bool MatchesSearch(JobApplication application)

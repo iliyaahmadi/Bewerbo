@@ -19,6 +19,8 @@ internal sealed class FakeDialogService : IDialogService
 
     public Action<FilesViewModel>? OnFiles { get; set; }
 
+    public Action<FiltersViewModel>? OnFilters { get; set; }
+
     public IReadOnlyList<string> FilesToPick { get; set; } = [];
 
     public void ShowEditor(EditorViewModel editor) => LastEditor = editor;
@@ -28,6 +30,8 @@ internal sealed class FakeDialogService : IDialogService
     public void ShowFolderImport(FolderImportViewModel import) => OnFolderImport?.Invoke(import);
 
     public void ShowFiles(FilesViewModel files) => OnFiles?.Invoke(files);
+
+    public void ShowFilters(FiltersViewModel filters) => OnFilters?.Invoke(filters);
 
     public bool Confirm(string message, string title) => true;
 

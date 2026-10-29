@@ -27,7 +27,31 @@ public class ApplicationQueryTests
 
     [Fact]
     public void Filters_by_position_ignoring_case_and_spaces() =>
-        Assert.Equal(["Beta", "Alpha"], Companies(new ApplicationFilter(PositionKey: Positions.Key("Fachinformatiker Systemintegration"))));
+        Assert.Equal(["Beta", "Alpha"], Companies(new ApplicationFilter(Advanced: new AdvancedFilter { PositionKeys = new HashSet<string> { Positions.Key("Fachinformatiker Systemintegration") } })));
+
+    [Fact]
+    public void Advanced_filter_combines_dates_location_and_follow_ups()
+    {
+        var early = TestData.Application("Early");
+        early.AppliedOn = new DateOnly(2026, 9, 1);
+        early.Location = "Hamburg";
+        var late = TestData.Application("Late");
+        late.AppliedOn = new DateOnly(2026, 10, 20);
+        late.Location = "Berlin";
+        late.FollowUpOn = TestData.Today;
+        var undated = TestData.Application("Undated");
+
+        List<JobApplication> all = [early, late, undated];
+        string[] Run(AdvancedFilter advanced) =>
+            [.. ApplicationQuery.Run(all, new ApplicationFilter(Advanced: advanced, Today: TestData.Today), SortOrder.Company).Select(a => a.Company)];
+
+        Assert.Equal(["Late"], Run(new AdvancedFilter { AppliedFrom = new DateOnly(2026, 10, 1) }));
+        Assert.Equal(["Early"], Run(new AdvancedFilter { AppliedTo = new DateOnly(2026, 9, 30) }));
+        Assert.Equal(["Early"], Run(new AdvancedFilter { Location = " hamburg " }));
+        Assert.Equal(["Late"], Run(new AdvancedFilter { FollowUpDueOnly = true }));
+        Assert.Equal(["Early", "Late", "Undated"], Run(AdvancedFilter.None));
+        Assert.Equal(2, new AdvancedFilter { AppliedFrom = TestData.Today, FollowUpDueOnly = true }.Count);
+    }
 
     [Theory]
     [InlineData("dns", "Alpha")]

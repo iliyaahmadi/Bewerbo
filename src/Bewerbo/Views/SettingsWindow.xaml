@@ -45,11 +45,14 @@
                     </Grid.ColumnDefinitions>
                     <TextBox Text="{Binding DocumentsFolder, UpdateSourceTrigger=PropertyChanged}" />
                     <Button Grid.Column="1" Content="Browse…" Command="{Binding BrowseDocumentsCommand}" Margin="8,0,0,0" />
-                    <Button Grid.Column="2" Content="✕" ToolTip="Turn the documents features off" Command="{Binding ClearDocumentsCommand}"
+                    <Button Grid.Column="2" Content="✕" ToolTip="Use the default folder" Command="{Binding ClearDocumentsCommand}"
                             Style="{StaticResource GhostButton}" Margin="4,0,0,0" Padding="10"
                             Visibility="{Binding HasDocumentsFolder, Converter={StaticResource VisibleWhenTrue}}" />
                 </Grid>
-                <TextBlock Text="For example Documents\Bewerbungen, with a folder like “Siemens” for each company." Style="{StaticResource HintText}" />
+                <TextBlock Style="{StaticResource HintText}" TextWrapping="Wrap">
+                    <Run Text="A folder like “Siemens” is kept here for each company. Leave it empty to use" />
+                    <Run Text="{Binding DefaultDocumentsFolder, Mode=OneWay}" /><Run Text="." />
+                </TextBlock>
 
                 <TextBlock Text="Standard documents" Style="{StaticResource FieldLabel}" />
                 <Grid>
@@ -66,8 +69,6 @@
                 </Grid>
                 <TextBlock Text="Optional. Files you send with every application, such as your CV and certificates. New company folders start with a copy."
                            Style="{StaticResource HintText}" TextWrapping="Wrap" />
-
-                <CheckBox Content="Create a company folder when I add an application" IsChecked="{Binding CreateFolderForNewApplications}" Margin="0,20,0,0" />
             </StackPanel>
         </ScrollViewer>
 

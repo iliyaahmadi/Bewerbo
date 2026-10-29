@@ -24,6 +24,7 @@ dotnet publish src/Bewerbo -p:PublishProfile=win-x64   # single-file exe in .\pu
 | `src/Bewerbo.Core/JobApplication.cs` | The model. Dates are `DateOnly?`, timestamps are UTC `DateTime`. |
 | `src/Bewerbo.Core/ApplicationDraft.cs` | Editor form state: validation and building a `JobApplication`. |
 | `src/Bewerbo.Core/ApplicationQuery.cs` | `ApplicationFilter` and sorting. |
+| `src/Bewerbo.Core/AdvancedFilter.cs` | Criteria from the Advanced filters window: positions, date range, location, follow-ups due. |
 | `src/Bewerbo.Core/Labels.cs` | `Labels`: grouping of free-text positions and types (case and whitespace insensitive), type tag colours. |
 | `src/Bewerbo.Core/ApplicationSummary.cs` | Sidebar overview numbers. |
 | `src/Bewerbo.Core/DetailsParser.cs` | "Field: value" parser behind Paste details and Ctrl+V, plus the prompt behind Copy prompt. |
@@ -31,7 +32,7 @@ dotnet publish src/Bewerbo -p:PublishProfile=win-x64   # single-file exe in .\pu
 | `src/Bewerbo.Core/Documents/` | Company folders: naming, standard documents, copying files in, folder import. |
 | `src/Bewerbo.Core/Storage/` | JSON format, atomic save with backup, import merge, settings file, data folder. |
 | `src/Bewerbo/ViewModels/` | Main, editor, card, settings, folder import and documents view models, small MVVM helpers. |
-| `src/Bewerbo/Views/` | `MainWindow`, `EditorWindow`, `SettingsWindow`, `FolderImportWindow`. Code-behind only for focus, keyboard, clipboard and drag and drop. |
+| `src/Bewerbo/Views/` | `MainWindow`, `EditorWindow`, `SettingsWindow`, `FolderImportWindow`, `FilesWindow`, `FiltersWindow`. Code-behind only for focus, keyboard, clipboard and drag and drop. |
 | `src/Bewerbo/Services/` | Dialogs, favicon cache, clipboard, theme switching and the title bar colour. |
 | `src/Bewerbo/Themes/` | `Dark.xaml` and `Light.xaml` (the two palettes, same keys) and `Controls.xaml` (all styles). |
 
@@ -70,8 +71,10 @@ The documents folder holds the user's real application documents.
 - For a new application, the form lists the standard documents and the user's own files as pending; they are
   copied when it is saved, so Cancel never touches the disk. For an existing application, adding and removing in
   the files list act straight away.
+- The documents folder is `Settings.DocumentsFolder`, or `Documents\Bewerbo` when it is empty, so files are
+  always available. Nothing is created there until the user adds a file or opens a folder.
 - An application without a `Folder` uses `<documents folder>\<company>`. Adding files to it, opening its folder
-  or saving a new application links the folder by storing its path.
+  or saving a new application with files links the folder by storing its path.
 - `MainViewModel` caches folder listings so filtering never reads the disk. The cache is cleared when the main
   window is activated and for a folder whose files the app changed.
 

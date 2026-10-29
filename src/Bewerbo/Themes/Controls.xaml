@@ -75,41 +75,6 @@
         <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
     </Style>
 
-    <!-- Opens a popup. While the popup is open the button ignores clicks, so a click on it only closes the popup. -->
-    <Style x:Key="FilterToggle" TargetType="ToggleButton">
-        <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}" />
-        <Setter Property="Cursor" Value="Hand" />
-        <Setter Property="FontSize" Value="11" />
-        <Setter Property="FontWeight" Value="SemiBold" />
-        <Setter Property="Padding" Value="12,7" />
-        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="ToggleButton">
-                    <Border x:Name="Box" Background="Transparent" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
-                            CornerRadius="8" Padding="{TemplateBinding Padding}">
-                        <StackPanel Orientation="Horizontal">
-                            <ContentPresenter VerticalAlignment="Center" />
-                            <TextBlock Text="⌄" Margin="8,-4,0,0" VerticalAlignment="Center" Foreground="{DynamicResource TextMutedBrush}" />
-                        </StackPanel>
-                    </Border>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Box" Property="Background" Value="{DynamicResource ControlBrush}" />
-                        </Trigger>
-                        <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="Box" Property="BorderBrush" Value="{DynamicResource AccentLightBrush}" />
-                            <Setter Property="IsHitTestVisible" Value="False" />
-                        </Trigger>
-                        <Trigger Property="IsEnabled" Value="False">
-                            <Setter TargetName="Box" Property="Opacity" Value="0.45" />
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
-
     <Style x:Key="NavButton" TargetType="Button">
         <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}" />
         <Setter Property="Cursor" Value="Hand" />
@@ -226,12 +191,15 @@
         <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
         <Setter Property="FontSize" Value="14" />
         <Setter Property="MaxDropDownHeight" Value="310" />
+        <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ComboBox">
                     <Grid x:Name="ComboRoot">
                         <Border x:Name="ComboBoxBorder" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="1" CornerRadius="8" />
+                        <!-- Lightens or darkens any background colour, so status-coloured dropdowns get a hover effect too. -->
+                        <Border x:Name="HoverOverlay" CornerRadius="8" Background="{TemplateBinding Foreground}" Opacity="0" IsHitTestVisible="False" />
                         <ContentPresenter Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
                                           ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
                                           ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}"
@@ -241,9 +209,25 @@
                             <ToggleButton.Template>
                                 <ControlTemplate TargetType="ToggleButton">
                                     <Border Background="Transparent">
-                                        <TextBlock Text="⌄" Foreground="{DynamicResource TextMutedBrush}" FontSize="17"
-                                                   HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,-3,14,0" />
+                                        <Path x:Name="Chevron" Data="M 0,0 L 5,5 L 10,0" Width="10" Height="5" Stretch="None"
+                                              Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ComboBox}}" StrokeThickness="1.6"
+                                              StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" Opacity="0.65"
+                                              HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,15,0"
+                                              RenderTransformOrigin="0.5,0.5" SnapsToDevicePixels="False">
+                                            <Path.RenderTransform>
+                                                <RotateTransform Angle="0" />
+                                            </Path.RenderTransform>
+                                        </Path>
                                     </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsChecked" Value="True">
+                                            <Setter TargetName="Chevron" Property="RenderTransform">
+                                                <Setter.Value>
+                                                    <RotateTransform Angle="180" />
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
                                 </ControlTemplate>
                             </ToggleButton.Template>
                         </ToggleButton>
@@ -260,6 +244,7 @@
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="ComboBoxBorder" Property="BorderBrush" Value="{DynamicResource ControlHoverBorderBrush}" />
+                            <Setter TargetName="HoverOverlay" Property="Opacity" Value="0.07" />
                         </Trigger>
                         <Trigger Property="IsDropDownOpen" Value="True">
                             <Setter TargetName="ComboBoxBorder" Property="BorderBrush" Value="{DynamicResource AccentLightBrush}" />

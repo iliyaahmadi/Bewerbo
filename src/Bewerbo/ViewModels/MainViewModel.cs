@@ -18,7 +18,7 @@ public sealed class MainViewModel : ObservableObject, ICardActions
     private List<JobApplication> _applications;
     private string? _typeKey;
     private ApplicationStatus? _status;
-    private string? _positionKey;
+    private AdvancedFilter _advanced = AdvancedFilter.None;
     private string _search = "";
     private SortOption _sort;
     private string _title = "";
@@ -26,8 +26,7 @@ public sealed class MainViewModel : ObservableObject, ICardActions
     private ApplicationSummary _summary;
     private bool _hasResults;
     private Settings _settings;
-    private DocumentLibrary? _library;
-    private bool _isFiltersOpen;
+    private DocumentLibrary _library;
 
     // Folder listings for the cards, so filtering and sorting never touch the disk.
     private readonly Dictionary<string, FolderState> _folders = new(StringComparer.OrdinalIgnoreCase);
@@ -52,7 +51,8 @@ public sealed class MainViewModel : ObservableObject, ICardActions
         ClearFiltersCommand = new RelayCommand(ClearFilters);
         SettingsCommand = new RelayCommand(OpenSettings);
         ImportFoldersCommand = new RelayCommand(ImportFolders);
-        ClearPositionCommand = new RelayCommand(() => SelectPosition(null));
+        OpenFiltersCommand = new RelayCommand(OpenFilters);
+        ClearAdvancedCommand = new RelayCommand(() => ApplyAdvanced(AdvancedFilter.None));
 
         Refresh();
     }
@@ -63,11 +63,10 @@ public sealed class MainViewModel : ObservableObject, ICardActions
         new("Recently updated", SortOrder.RecentlyUpdated),
         new("Company A–Z", SortOrder.Company),
         new("Follow-up date", SortOrder.FollowUpDate),
+        new("Advanced filters…", null),
     ];
 
     public ObservableCollection<NavItem> Categories { get; } = [];
-
-    public ObservableCollection<NavItem> PositionFilters { get; } = [];
 
     public ObservableCollection<NavItem> StatusFilters { get; } = [];
 
@@ -87,27 +86,20 @@ public sealed class MainViewModel : ObservableObject, ICardActions
 
     public RelayCommand ImportFoldersCommand { get; }
 
-    public RelayCommand ClearPositionCommand { get; }
+    public RelayCommand OpenFiltersCommand { get; }
 
-    /// <summary>Whether the Filters popup is open.</summary>
-    public bool IsFiltersOpen
-    {
-        get => _isFiltersOpen;
-        set => SetProperty(ref _isFiltersOpen, value);
-    }
+    public RelayCommand ClearAdvancedCommand { get; }
 
-    public bool HasPositions => PositionFilters.Count > 1;
+    /// <summary>The criteria set in the Advanced filters window.</summary>
+    public AdvancedFilter Advanced => _advanced;
 
-    /// <summary>The position picked in the Filters popup, or null.</summary>
-    public string? ActivePosition { get; private set; }
+    public bool HasAdvancedFilters => !_advanced.IsEmpty;
 
-    public bool HasActivePosition => ActivePosition is not null;
-
-    public string FiltersLabel => HasActivePosition ? "Filters · 1" : "Filters";
+    public string AdvancedFiltersLabel => _advanced.Count == 1 ? "1 filter" : $"{_advanced.Count} filters";
 
     public Settings Settings => _settings.Clone();
 
-    public bool HasDocumentsFolder => _library is not null;
+    public string DocumentsFolder => _library.Root;
 
     public string Search
     {
@@ -129,6 +121,19 @@ public sealed class MainViewModel : ObservableObject, ICardActions
         get => _sort;
         set
         {
+            if (value.Order is null)
+            {
+                // "Advanced filters…" is not a sort order: keep the current one and open the window
+                // once the dropdown has closed.
+                OnPropertyChanged(nameof(Sort));
+                System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeAsync(() =>
+                {
+                    OnPropertyChanged(nameof(Sort));
+                    OpenFilters();
+                });
+                return;
+            }
+
             if (SetProperty(ref _sort, value))
                 Refresh();
         }
@@ -182,38 +187,34 @@ public sealed class MainViewModel : ObservableObject, ICardActions
         if (_typeKey is not null && types.All(t => t.Key != _typeKey))
             _typeKey = null;
 
-        var inType = _applications.Where(a => _typeKey is null || Labels.Key(a.Type) == _typeKey).ToList();
-        var positions = Core.Positions.Group(inType);
-        if (_positionKey is not null && positions.All(g => g.Key != _positionKey))
-            _positionKey = null;
+        var filtered = _applications
+            .Where(a => (_typeKey is null || Labels.Key(a.Type) == _typeKey) && _advanced.Matches(a, Today))
+            .ToList();
 
         Replace(Categories,
             types.Select(type => new NavItem(type.Name, type.Count, type.Key == _typeKey, new RelayCommand(() => SelectType(type.Key))))
                 .Prepend(new NavItem("All applications", _applications.Count, _typeKey is null, new RelayCommand(() => SelectType(null)))));
 
-        Replace(PositionFilters,
-            positions.Select(group => new NavItem(group.Name, group.Count, group.Key == _positionKey, new RelayCommand(() => SelectPosition(group.Key))))
-                .Prepend(new NavItem("All positions", inType.Count, _positionKey is null, new RelayCommand(() => SelectPosition(null)))));
-        ActivePosition = positions.FirstOrDefault(g => g.Key == _positionKey)?.Name;
-        OnPropertyChanged(nameof(HasPositions));
-        OnPropertyChanged(nameof(ActivePosition));
-        OnPropertyChanged(nameof(HasActivePosition));
-        OnPropertyChanged(nameof(FiltersLabel));
-
-        var inPosition = inType.Where(a => _positionKey is null || Core.Positions.Key(a.Position) == _positionKey).ToList();
         Replace(StatusFilters,
             new ApplicationStatus?[] { null }.Concat(Enum.GetValues<ApplicationStatus>().Cast<ApplicationStatus?>())
                 .Select(status => new NavItem(
                     status?.ToString() ?? "All",
-                    inPosition.Count(a => status is null || a.Status == status),
+                    filtered.Count(a => status is null || a.Status == status),
                     status == _status,
                     new RelayCommand(() => SelectStatus(status)))));
 
         SyncCards(types);
 
-        Title = positions.FirstOrDefault(g => g.Key == _positionKey)?.Name
+        // A single position picked in Advanced filters names the list; otherwise the category does.
+        Title = (_advanced.PositionKeys.Count == 1
+                ? _applications.FirstOrDefault(a => _advanced.PositionKeys.Contains(Core.Positions.Key(a.Position)))?.Position.Trim()
+                : null)
             ?? types.FirstOrDefault(t => t.Key == _typeKey)?.Name
             ?? "All applications";
+
+        OnPropertyChanged(nameof(Advanced));
+        OnPropertyChanged(nameof(HasAdvancedFilters));
+        OnPropertyChanged(nameof(AdvancedFiltersLabel));
 
         HasResults = Cards.Count > 0;
         OnPropertyChanged(nameof(HasNoApplications));
@@ -225,14 +226,19 @@ public sealed class MainViewModel : ObservableObject, ICardActions
     private void SelectType(string? key)
     {
         _typeKey = key;
-        _positionKey = null;
         Refresh();
     }
 
-    private void SelectPosition(string? key)
+    /// <summary>Opens the Advanced filters window for the positions in the current category.</summary>
+    private void OpenFilters()
     {
-        _positionKey = key;
-        IsFiltersOpen = false;
+        var inType = _applications.Where(a => _typeKey is null || Labels.Key(a.Type) == _typeKey);
+        _dialogs.ShowFilters(new FiltersViewModel(Core.Positions.Group(inType), _advanced, ApplyAdvanced));
+    }
+
+    private void ApplyAdvanced(AdvancedFilter filter)
+    {
+        _advanced = filter;
         Refresh();
     }
 
@@ -242,9 +248,9 @@ public sealed class MainViewModel : ObservableObject, ICardActions
     /// </summary>
     private void SyncCards(List<LabelGroup> types)
     {
-        var filter = new ApplicationFilter(_typeKey, _status, _positionKey, _search);
+        var filter = new ApplicationFilter(_typeKey, _status, _advanced, _search, Today);
         var allTypes = types.Select(t => t.Name).ToList();
-        var applications = ApplicationQuery.Run(_applications, filter, _sort.Order);
+        var applications = ApplicationQuery.Run(_applications, filter, _sort.Order ?? SortOrder.Newest);
 
         for (var i = 0; i < applications.Count; i++)
         {
@@ -265,11 +271,8 @@ public sealed class MainViewModel : ObservableObject, ICardActions
             Cards.RemoveAt(Cards.Count - 1);
     }
 
-    private FolderState? FolderOf(JobApplication application)
+    private FolderState FolderOf(JobApplication application)
     {
-        if (_library is null)
-            return null;
-
         var folder = _library.FolderFor(application);
         if (!_folders.TryGetValue(folder, out var state))
             _folders[folder] = state = new FolderState(Directory.Exists(folder), DocumentLibrary.List(folder));
@@ -299,7 +302,7 @@ public sealed class MainViewModel : ObservableObject, ICardActions
     {
         _typeKey = null;
         _status = null;
-        _positionKey = null;
+        _advanced = AdvancedFilter.None;
         _search = "";
         OnPropertyChanged(nameof(Search));
         OnPropertyChanged(nameof(HasSearch));
@@ -340,24 +343,12 @@ public sealed class MainViewModel : ObservableObject, ICardActions
 
     public void ShowFiles(JobApplication application)
     {
-        if (_library is null)
-        {
-            _dialogs.ShowInfo("Choose a documents folder in Settings first. Bewerbo then keeps one folder per company there.", "No documents folder");
-            return;
-        }
-
         var documents = DocumentsViewModel.ForFolder(_library.FolderFor(application), new ApplicationFiles(this, application));
         _dialogs.ShowFiles(new FilesViewModel(application.Company, application.Position, documents));
     }
 
     public void AddFiles(JobApplication application, IReadOnlyList<string> files)
     {
-        if (_library is null)
-        {
-            _dialogs.ShowInfo("Choose a documents folder in Settings first. Bewerbo then keeps one folder per company there.", "No documents folder");
-            return;
-        }
-
         if (LinkFolder(application) is not { } folder)
             return;
 
@@ -397,16 +388,13 @@ public sealed class MainViewModel : ObservableObject, ICardActions
     {
         var types = ApplicationTypes.Group(_applications);
         var type = types.FirstOrDefault(t => t.Key == _typeKey)?.Name ?? types.FirstOrDefault()?.Name ?? ApplicationTypes.Suggestions[0];
-        var creates = _library is not null && _settings.CreateFolderForNewApplications;
-        var documents = _library is null
-            ? null
-            : DocumentsViewModel.ForNew(creates ? _library.StandardDocuments.Select(d => d.Path) : [], new NewApplicationFiles(_dialogs));
-        var note = creates ? $"A folder for this company is created in {_library!.Root} when you save." : null;
+        var documents = DocumentsViewModel.ForNew(_library.StandardDocuments.Select(d => d.Path), new NewApplicationFiles(_dialogs));
+        var note = $"Files are copied to a folder for this company in {_library.Root} when you save.";
 
         return new EditorViewModel(
             ApplicationDraft.ForNew(type, Today),
             null,
-            application => SaveNew(application, documents?.PendingFiles ?? []),
+            application => SaveNew(application, documents.PendingFiles),
             Delete,
             TypeSuggestions(types),
             documents,
@@ -415,7 +403,7 @@ public sealed class MainViewModel : ObservableObject, ICardActions
 
     public void Edit(JobApplication application)
     {
-        var documents = _library is null ? null : DocumentsViewModel.ForFolder(_library.FolderFor(application), new ApplicationFiles(this, application));
+        var documents = DocumentsViewModel.ForFolder(_library.FolderFor(application), new ApplicationFiles(this, application));
         _dialogs.ShowEditor(new EditorViewModel(
             ApplicationDraft.From(application),
             application,
@@ -431,7 +419,7 @@ public sealed class MainViewModel : ObservableObject, ICardActions
     /// <summary>Saves a new application and copies the files collected in the form into its folder.</summary>
     private bool SaveNew(JobApplication application, IReadOnlyList<string> files)
     {
-        if (_library is not null && (files.Count > 0 || _settings.CreateFolderForNewApplications))
+        if (files.Count > 0)
         {
             var folder = _library.FolderFor(application);
             try
@@ -503,12 +491,9 @@ public sealed class MainViewModel : ObservableObject, ICardActions
         _applications.FirstOrDefault(a => a.Id == application.Id) ?? application;
 
     /// <summary>Creates the application's folder if needed and remembers it on the application.</summary>
-    /// <returns>The folder, or null when there is no documents folder or it could not be created.</returns>
+    /// <returns>The folder, or null when it could not be created.</returns>
     private string? LinkFolder(JobApplication application)
     {
-        if (_library is null)
-            return null;
-
         var folder = _library.FolderFor(application);
         try
         {
@@ -533,13 +518,13 @@ public sealed class MainViewModel : ObservableObject, ICardActions
 
     private void OpenSettings()
     {
-        var hadDocumentsFolder = _settings.DocumentsFolder;
+        var hadDocumentsFolder = _library.Root;
         _dialogs.ShowSettings(new SettingsViewModel(_settings, _dialogs, SaveSettings));
 
         // Offer to pick up the existing company folders right after a documents folder is chosen.
-        if (_library is not null && _settings.DocumentsFolder != hadDocumentsFolder
+        if (_library.Root != hadDocumentsFolder
             && _library.FindUntracked(_applications).Count is > 0 and var count
-            && _dialogs.Confirm($"{_settings.DocumentsFolder} has {count} company folder{(count == 1 ? "" : "s")} without an application. Add them now?", "Import folders"))
+            && _dialogs.Confirm($"{_library.Root} has {count} company folder{(count == 1 ? "" : "s")} without an application. Add them now?", "Import folders"))
         {
             ImportFolders();
         }
@@ -561,16 +546,13 @@ public sealed class MainViewModel : ObservableObject, ICardActions
         _library = CreateLibrary(settings);
         _folders.Clear();
         _applyTheme(settings.Theme);
-        OnPropertyChanged(nameof(HasDocumentsFolder));
+        OnPropertyChanged(nameof(DocumentsFolder));
         Refresh();
         return true;
     }
 
     private void ImportFolders()
     {
-        if (_library is null)
-            return;
-
         var candidates = _library.FindUntracked(_applications);
         if (candidates.Count == 0)
         {
@@ -592,8 +574,8 @@ public sealed class MainViewModel : ObservableObject, ICardActions
         }));
     }
 
-    private static DocumentLibrary? CreateLibrary(Settings settings) =>
-        settings.HasDocumentsFolder ? new DocumentLibrary(settings.DocumentsFolder, settings.StandardDocumentsFolder) : null;
+    private static DocumentLibrary CreateLibrary(Settings settings) =>
+        new(settings.DocumentsFolderOrDefault, settings.StandardDocumentsFolder);
 
     private void Export()
     {

@@ -15,14 +15,12 @@ public class SettingsStoreTests
             Theme = AppTheme.Light,
             DocumentsFolder = @"C:\Users\Example\Documents\Bewerbungen",
             StandardDocumentsFolder = @"C:\Users\Example\Documents\Standard",
-            CreateFolderForNewApplications = false,
         });
         var loaded = store.Load();
 
         Assert.Equal(AppTheme.Light, loaded.Theme);
         Assert.Equal(@"C:\Users\Example\Documents\Bewerbungen", loaded.DocumentsFolder);
         Assert.Equal(@"C:\Users\Example\Documents\Standard", loaded.StandardDocumentsFolder);
-        Assert.False(loaded.CreateFolderForNewApplications);
         Assert.Contains("\"Theme\": \"Light\"", File.ReadAllText(store.FilePath));
     }
 
@@ -42,6 +40,13 @@ public class SettingsStoreTests
         Assert.Equal(AppTheme.System, settings.Theme);
         Assert.Equal("", settings.DocumentsFolder);
         Assert.False(settings.HasDocumentsFolder);
-        Assert.True(settings.CreateFolderForNewApplications);
+    }
+
+    [Fact]
+    public void An_empty_documents_folder_means_the_default_one()
+    {
+        Assert.Equal(Settings.DefaultDocumentsFolder, new Settings().DocumentsFolderOrDefault);
+        Assert.EndsWith("Bewerbo", Settings.DefaultDocumentsFolder);
+        Assert.Equal("D:\\Jobs", new Settings { DocumentsFolder = "D:\\Jobs" }.DocumentsFolderOrDefault);
     }
 }

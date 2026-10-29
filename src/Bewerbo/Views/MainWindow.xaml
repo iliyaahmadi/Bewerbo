@@ -255,8 +255,7 @@
 
                 <StackPanel Grid.Row="4">
                     <Button Content="Import from folders" Command="{Binding ImportFoldersCommand}" Style="{StaticResource GhostButton}" Margin="0,0,0,4"
-                            ToolTip="Add applications for company folders that don't have one yet"
-                            Visibility="{Binding HasDocumentsFolder, Converter={StaticResource VisibleWhenTrue}}" />
+                            ToolTip="Add applications for company folders that don't have one yet" />
                     <Button Content="Export backup" Command="{Binding ExportCommand}" Background="{DynamicResource FieldHoverBrush}"
                             Foreground="{DynamicResource TextBodyBrush}" Margin="0,0,0,7" />
                     <Button Content="Import backup" Command="{Binding ImportCommand}" Style="{StaticResource GhostButton}" />
@@ -332,38 +331,22 @@
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="APPLICATIONS" Style="{StaticResource SectionLabel}" VerticalAlignment="Center" />
 
-                    <!-- The position picked in Filters, with a quick way to drop it. -->
-                    <Border Grid.Column="1" HorizontalAlignment="Left" Margin="12,0,12,0" CornerRadius="6" Padding="10,0,2,0"
+                    <!-- Shown while Advanced filters are set: click to change them, ✕ to drop them. -->
+                    <Border Grid.Column="1" HorizontalAlignment="Left" Margin="12,0,12,0" CornerRadius="6"
                             Background="{DynamicResource ControlHoverBrush}" BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1"
-                            Visibility="{Binding HasActivePosition, Converter={StaticResource VisibleWhenTrue}}">
+                            Visibility="{Binding HasAdvancedFilters, Converter={StaticResource VisibleWhenTrue}}">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="{Binding ActivePosition}" ToolTip="{Binding ActivePosition}" FontSize="11" MaxWidth="260"
-                                       TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                            <Button Content="✕" Command="{Binding ClearPositionCommand}" ToolTip="Show all positions" Style="{StaticResource GhostButton}"
-                                    FontSize="10" FontWeight="Normal" Padding="7,5" Margin="4,0,0,0" />
+                            <Button Content="{Binding AdvancedFiltersLabel}" Command="{Binding OpenFiltersCommand}" ToolTip="Change the advanced filters"
+                                    Style="{StaticResource GhostButton}" FontSize="11" Padding="10,5,4,5" />
+                            <Button Content="✕" Command="{Binding ClearAdvancedCommand}" ToolTip="Remove the advanced filters" Style="{StaticResource GhostButton}"
+                                    FontSize="10" FontWeight="Normal" Padding="7,5" />
                         </StackPanel>
                     </Border>
-
-                    <ToggleButton x:Name="FiltersButton" Grid.Column="2" Style="{StaticResource FilterToggle}" Content="{Binding FiltersLabel}"
-                                  IsChecked="{Binding IsFiltersOpen, Mode=TwoWay}" IsEnabled="{Binding HasPositions}"
-                                  ToolTip="Filter by position" />
-                    <Popup Grid.Column="2" PlacementTarget="{Binding ElementName=FiltersButton}" Placement="Bottom" StaysOpen="False"
-                           IsOpen="{Binding IsFiltersOpen, Mode=TwoWay}" AllowsTransparency="True" PopupAnimation="None">
-                        <Border Width="340" Margin="0,6,0,0" Padding="8" CornerRadius="10" Background="{DynamicResource ControlBrush}"
-                                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
-                            <StackPanel>
-                                <TextBlock Text="POSITION" Style="{StaticResource SectionLabel}" Margin="10,6,0,8" />
-                                <ScrollViewer MaxHeight="380" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                                    <ItemsControl ItemsSource="{Binding PositionFilters}" ItemTemplate="{StaticResource NavItemTemplate}" Focusable="False" />
-                                </ScrollViewer>
-                            </StackPanel>
-                        </Border>
-                    </Popup>
 
                     <Button Grid.Column="3" Content="Clear filters" Command="{Binding ClearFiltersCommand}" Style="{StaticResource GhostButton}"
                             FontSize="11" Padding="10,7" Margin="6,0,0,0" />
                     <ComboBox Grid.Column="5" ItemsSource="{Binding SortOptions}" SelectedItem="{Binding Sort}" DisplayMemberPath="Label"
-                              MinHeight="34" FontSize="12" />
+                              MinHeight="34" FontSize="12" ToolTip="Sort, or open Advanced filters" />
                 </Grid>
             </StackPanel>
 

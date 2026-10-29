@@ -64,15 +64,8 @@ public sealed class SettingsViewModel : ObservableObject
 
     public bool HasStandardDocumentsFolder => _settings.StandardDocumentsFolder.Length > 0;
 
-    public bool CreateFolderForNewApplications
-    {
-        get => _settings.CreateFolderForNewApplications;
-        set
-        {
-            _settings.CreateFolderForNewApplications = value;
-            OnPropertyChanged();
-        }
-    }
+    /// <summary>Shown in the empty documents folder box.</summary>
+    public string DefaultDocumentsFolder => Settings.DefaultDocumentsFolder;
 
     public RelayCommand BrowseDocumentsCommand { get; }
 

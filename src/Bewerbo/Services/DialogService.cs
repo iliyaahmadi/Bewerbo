@@ -25,6 +25,9 @@ public sealed class DialogService(Window owner) : IDialogService
     public void ShowFiles(FilesViewModel files) =>
         new FilesWindow(files) { Owner = ActiveWindow }.ShowDialog();
 
+    public void ShowFilters(FiltersViewModel filters) =>
+        new FiltersWindow(filters) { Owner = owner }.ShowDialog();
+
     public bool Confirm(string message, string title) =>
         MessageBox.Show(ActiveWindow, message, title, MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
 

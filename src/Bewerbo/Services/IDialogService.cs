@@ -12,6 +12,8 @@ public interface IDialogService
 
     void ShowFiles(FilesViewModel files);
 
+    void ShowFilters(FiltersViewModel filters);
+
     bool Confirm(string message, string title);
 
     void ShowInfo(string message, string title);

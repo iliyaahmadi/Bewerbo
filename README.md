@@ -15,10 +15,11 @@ computer in a single JSON file. There is no account and no server.
 - **Your own types.** Give each application any type you like, such as Job, Ausbildung, Internship or
   Werkstudent. The sidebar lists every type with a count.
 - **Overview.** Open applications per type, plus interviews, offers, follow-ups that are due, and rejections.
-- **Search, filter and sort** by type, status, company, notes or location. **Filters** narrows the list to one
-  position, with a count for each, so you can see how many went out for every role.
-- **Files.** Point Bewerbo at the folder where you keep one subfolder per company (for example
-  `Documents\Applications\Siemens`). Each card has a Files button to see, open, add and remove that
+- **Search, filter and sort** by type, status, company, notes or location. **Advanced filters…**, the last entry
+  of the sort dropdown, opens a window to filter by position (with a count for each), application date,
+  location and follow-ups that are due.
+- **Files.** Bewerbo keeps one subfolder per company in `Documents\Bewerbo`, or in a folder you choose in
+  Settings (for example `Documents\Applications\Siemens`). Each card has a Files button to see, open, add and remove that
   application's files, and you can drop files on a card. When you add an application, the form lists the files
   it will start with: your standard documents plus anything you add, such as this company's cover letter and CV.
   Removed files go to the Recycle Bin. **Import from folders** turns company folders you already have into
