@@ -43,22 +43,6 @@ public class DocumentLibraryTests
     }
 
     [Fact]
-    public void Prepare_skips_standard_documents_the_user_brings_their_own_of()
-    {
-        using var root = new TempFolder();
-        var standard = Directory.CreateDirectory(root.File("Standard")).FullName;
-        File.WriteAllText(Path.Combine(standard, "Lebenslauf.pdf"), "standard cv");
-        File.WriteAllText(Path.Combine(standard, "Zeugnisse.pdf"), "certificates");
-        File.WriteAllText(Path.Combine(standard, "Lebenslauf_und_Zeugnisse.pdf"), "both");
-        var library = new DocumentLibrary(root.Path, standard);
-        string[] own = [Path.Combine("Downloads", "Anschreiben_Firma.pdf"), Path.Combine("Downloads", "CV_neu.pdf")];
-
-        var folder = library.Prepare(root.File("Firma"), own);
-
-        Assert.Equal(["Lebenslauf_und_Zeugnisse.pdf", "Zeugnisse.pdf"], Directory.GetFiles(folder).Select(Path.GetFileName).Order());
-    }
-
-    [Fact]
     public void Prepare_works_without_standard_documents()
     {
         using var root = new TempFolder();
@@ -85,6 +69,19 @@ public class DocumentLibraryTests
     }
 
     [Fact]
+    public void AddFiles_does_not_copy_a_file_that_is_already_there_with_the_same_content()
+    {
+        using var root = new TempFolder();
+        var folder = Directory.CreateDirectory(root.File("Firma")).FullName;
+        File.WriteAllText(Path.Combine(folder, "Lebenslauf.pdf"), "cv");
+        var source = Directory.CreateDirectory(root.File("Standard")).FullName;
+        File.WriteAllText(Path.Combine(source, "Lebenslauf.pdf"), "cv");
+
+        Assert.Empty(DocumentLibrary.AddFiles(folder, [Path.Combine(source, "Lebenslauf.pdf")]));
+        Assert.Single(Directory.GetFiles(folder));
+    }
+
+    [Fact]
     public void AddFiles_skips_files_that_are_already_in_the_folder()
     {
         using var root = new TempFolder();
@@ -106,15 +103,6 @@ public class DocumentLibraryTests
         var file = Assert.Single(DocumentLibrary.List(root.Path));
         Assert.Equal("Lebenslauf.pdf", file.Name);
         Assert.Empty(DocumentLibrary.List(root.File("missing")));
-    }
-
-    [Fact]
-    public void Check_uses_the_custom_checklist()
-    {
-        var library = new DocumentLibrary("root", checklist: DocumentChecklist.Parse("Portfolio\nCV: cv"));
-        var files = new[] { new DocumentFile(Path.Combine("x", "Portfolio.pdf"), 1, TestData.Now) };
-
-        Assert.Equal([("Portfolio", true), ("CV", false)], library.Check(files).Select(c => (c.Item.Name, c.IsPresent)));
     }
 
     [Fact]

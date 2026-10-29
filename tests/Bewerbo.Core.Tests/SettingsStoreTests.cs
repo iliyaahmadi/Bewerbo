@@ -1,4 +1,3 @@
-using Bewerbo.Core.Documents;
 using Bewerbo.Core.Storage;
 
 namespace Bewerbo.Core.Tests;
@@ -16,18 +15,12 @@ public class SettingsStoreTests
             Theme = AppTheme.Light,
             DocumentsFolder = @"C:\Users\Example\Documents\Bewerbungen",
             StandardDocumentsFolder = @"C:\Users\Example\Documents\Standard",
-            CreateFolderForNewApplications = false,
-            Checklist = DocumentChecklist.Parse("Portfolio: portfolio, arbeitsproben"),
         });
         var loaded = store.Load();
 
         Assert.Equal(AppTheme.Light, loaded.Theme);
         Assert.Equal(@"C:\Users\Example\Documents\Bewerbungen", loaded.DocumentsFolder);
         Assert.Equal(@"C:\Users\Example\Documents\Standard", loaded.StandardDocumentsFolder);
-        Assert.False(loaded.CreateFolderForNewApplications);
-        var item = Assert.Single(loaded.Checklist);
-        Assert.Equal("Portfolio", item.Name);
-        Assert.Equal(["portfolio", "arbeitsproben"], item.Keywords);
         Assert.Contains("\"Theme\": \"Light\"", File.ReadAllText(store.FilePath));
     }
 
@@ -47,7 +40,13 @@ public class SettingsStoreTests
         Assert.Equal(AppTheme.System, settings.Theme);
         Assert.Equal("", settings.DocumentsFolder);
         Assert.False(settings.HasDocumentsFolder);
-        Assert.True(settings.CreateFolderForNewApplications);
-        Assert.Equal(DocumentChecklist.Default.Select(i => i.Name), settings.Checklist.Select(i => i.Name));
+    }
+
+    [Fact]
+    public void An_empty_documents_folder_means_the_default_one()
+    {
+        Assert.Equal(Settings.DefaultDocumentsFolder, new Settings().DocumentsFolderOrDefault);
+        Assert.EndsWith("Bewerbo", Settings.DefaultDocumentsFolder);
+        Assert.Equal("D:\\Jobs", new Settings { DocumentsFolder = "D:\\Jobs" }.DocumentsFolderOrDefault);
     }
 }

@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=vm:SettingsViewModel}"
         Title="Settings"
-        Width="620" Height="820" MinWidth="520" MinHeight="500"
+        Width="620" Height="660" MinWidth="520" MinHeight="480"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
         Background="{DynamicResource SidebarBrush}"
         Foreground="{DynamicResource TextBrush}"
@@ -45,11 +45,14 @@
                     </Grid.ColumnDefinitions>
                     <TextBox Text="{Binding DocumentsFolder, UpdateSourceTrigger=PropertyChanged}" />
                     <Button Grid.Column="1" Content="Browse…" Command="{Binding BrowseDocumentsCommand}" Margin="8,0,0,0" />
-                    <Button Grid.Column="2" Content="✕" ToolTip="Turn the documents features off" Command="{Binding ClearDocumentsCommand}"
+                    <Button Grid.Column="2" Content="✕" ToolTip="Use the default folder" Command="{Binding ClearDocumentsCommand}"
                             Style="{StaticResource GhostButton}" Margin="4,0,0,0" Padding="10"
                             Visibility="{Binding HasDocumentsFolder, Converter={StaticResource VisibleWhenTrue}}" />
                 </Grid>
-                <TextBlock Text="For example Documents\Bewerbungen, with a folder like “Siemens” for each company." Style="{StaticResource HintText}" />
+                <TextBlock Style="{StaticResource HintText}" TextWrapping="Wrap">
+                    <Run Text="A folder like “Siemens” is kept here for each company. Leave it empty to use" />
+                    <Run Text="{Binding DefaultDocumentsFolder, Mode=OneWay}" /><Run Text="." />
+                </TextBlock>
 
                 <TextBlock Text="Standard documents" Style="{StaticResource FieldLabel}" />
                 <Grid>
@@ -66,22 +69,6 @@
                 </Grid>
                 <TextBlock Text="Optional. Files you send with every application, such as your CV and certificates. New company folders start with a copy."
                            Style="{StaticResource HintText}" TextWrapping="Wrap" />
-
-                <CheckBox Content="Create a company folder when I add an application" IsChecked="{Binding CreateFolderForNewApplications}" Margin="0,20,0,0" />
-
-                <Grid Margin="0,20,0,6">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Text="Document checklist" Foreground="{DynamicResource TextBodyBrush}" VerticalAlignment="Bottom" />
-                    <Button Grid.Column="1" Content="Reset" Command="{Binding ResetChecklistCommand}" Style="{StaticResource GhostButton}"
-                            FontSize="11" Padding="8,4" ToolTip="Go back to cover letter, CV and certificates" />
-                </Grid>
-                <TextBox Text="{Binding ChecklistText, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap"
-                         Height="120" VerticalContentAlignment="Top" VerticalScrollBarVisibility="Auto" FontSize="13" />
-                <TextBlock Style="{StaticResource HintText}" TextWrapping="Wrap"
-                           Text="One document per line, as Name: words in the file name. Each card shows ✓ for a document when a file in the company folder contains one of its words. Add your own, for example “Portfolio: portfolio, arbeitsproben”." />
             </StackPanel>
         </ScrollViewer>
 

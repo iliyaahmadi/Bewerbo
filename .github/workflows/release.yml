@@ -21,13 +21,13 @@ jobs:
         run: dotnet test Bewerbo.slnx -c Release
 
       - name: Publish
-        run: dotnet publish src/Bewerbo/Bewerbo.csproj -p:PublishProfile=win-x64
-
-      - name: Package
         shell: pwsh
-        run: Compress-Archive -Path publish/Bewerbo.exe -DestinationPath "Bewerbo-${{ github.ref_name }}-win-x64.zip"
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          dotnet publish src/Bewerbo/Bewerbo.csproj -p:PublishProfile=win-x64 -p:Version=$version
 
+      # Attach the single-file exe itself, so people download one file and run it.
       - uses: softprops/action-gh-release@v2
         with:
-          files: Bewerbo-*.zip
+          files: publish/Bewerbo.exe
           generate_release_notes: true

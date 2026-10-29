@@ -1,6 +1,5 @@
 using System.Text;
 using System.Text.Json;
-using Bewerbo.Core.Documents;
 
 namespace Bewerbo.Core.Storage;
 
@@ -24,9 +23,6 @@ public sealed class SettingsStore(string filePath)
 
             settings.DocumentsFolder ??= "";
             settings.StandardDocumentsFolder ??= "";
-            settings.Checklist = settings.Checklist?
-                .Where(item => item is { Name.Length: > 0, Keywords: not null })
-                .ToList() ?? [.. DocumentChecklist.Default];
             if (!Enum.IsDefined(settings.Theme))
                 settings.Theme = AppTheme.System;
             return settings;

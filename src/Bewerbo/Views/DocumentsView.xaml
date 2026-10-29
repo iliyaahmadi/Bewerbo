@@ -1,0 +1,78 @@
+<UserControl x:Class="Bewerbo.Views.DocumentsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:Bewerbo.ViewModels"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=vm:DocumentsViewModel}"
+             AllowDrop="True" DragEnter="OnDragOver" DragOver="OnDragOver" DragLeave="OnDragLeave" Drop="OnDrop">
+
+    <!-- The files of one application, with open, add and remove. Files can be dropped anywhere on it. -->
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Grid Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock VerticalAlignment="Center" Foreground="{DynamicResource TextBodyBrush}">
+                <Run Text="Files" /><Run Text="  " /><Run Text="{Binding Summary, Mode=OneWay}" Foreground="{DynamicResource TextMutedBrush}" FontSize="12" />
+            </TextBlock>
+            <Button Grid.Column="1" Content="Open folder" Command="{Binding OpenFolderCommand}" Style="{StaticResource GhostButton}"
+                    FontSize="12" Padding="10,6" ToolTip="{Binding Folder}"
+                    Visibility="{Binding HasFolder, Converter={StaticResource VisibleWhenTrue}}" />
+            <Button Grid.Column="2" Content="+  Add files" Command="{Binding AddFilesCommand}" FontSize="12" Padding="12,6" Margin="6,0,0,0" />
+        </Grid>
+
+        <Border x:Name="DropZone" Grid.Row="1" Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="1" CornerRadius="8" Padding="4" MinHeight="64">
+            <Grid>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
+                    <ItemsControl ItemsSource="{Binding Files}" Focusable="False">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:DocumentItem}">
+                                <Border x:Name="Row" CornerRadius="6" Padding="10,7,4,7" Background="Transparent">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}" ToolTip="{Binding Name}" TextTrimming="CharacterEllipsis" FontSize="13" />
+                                            <TextBlock Text="{Binding Detail}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" Margin="0,2,0,0" />
+                                        </StackPanel>
+                                        <Button Grid.Column="1" Content="Open" Command="{Binding OpenCommand}" Style="{StaticResource GhostButton}"
+                                                FontSize="11" Padding="10,5" />
+                                        <Button Grid.Column="2" Content="Remove" Command="{Binding RemoveCommand}" ToolTip="{Binding RemoveToolTip}"
+                                                Style="{StaticResource GhostButton}" Foreground="{DynamicResource DangerBrush}" FontSize="11" Padding="10,5" />
+                                    </Grid>
+                                </Border>
+                                <DataTemplate.Triggers>
+                                    <Trigger SourceName="Row" Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="Row" Property="Background" Value="{DynamicResource ControlBrush}" />
+                                    </Trigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+                <TextBlock Text="No files yet. Drop your cover letter, CV or anything else here, or use Add files."
+                           Margin="16" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
+                           Foreground="{DynamicResource TextMutedBrush}"
+                           Visibility="{Binding IsEmpty, Converter={StaticResource VisibleWhenTrue}}" />
+            </Grid>
+        </Border>
+
+        <TextBlock Grid.Row="2" Style="{StaticResource HintText}" TextWrapping="Wrap"
+                   Text="Removed files go to the Recycle Bin, so you can restore them there."
+                   Visibility="{Binding HasFolder, Converter={StaticResource VisibleWhenTrue}}" />
+    </Grid>
+</UserControl>

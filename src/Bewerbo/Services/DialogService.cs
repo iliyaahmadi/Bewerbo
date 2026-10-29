@@ -22,6 +22,12 @@ public sealed class DialogService(Window owner) : IDialogService
     public void ShowFolderImport(FolderImportViewModel import) =>
         new FolderImportWindow(import) { Owner = owner }.ShowDialog();
 
+    public void ShowFiles(FilesViewModel files) =>
+        new FilesWindow(files) { Owner = ActiveWindow }.ShowDialog();
+
+    public void ShowFilters(FiltersViewModel filters) =>
+        new FiltersWindow(filters) { Owner = owner }.ShowDialog();
+
     public bool Confirm(string message, string title) =>
         MessageBox.Show(ActiveWindow, message, title, MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
 
@@ -69,6 +75,20 @@ public sealed class DialogService(Window owner) : IDialogService
     }
 
     public void OpenPath(string path) => Start(path);
+
+    public bool MoveToRecycleBin(string path)
+    {
+        try
+        {
+            RecycleBin.MoveFile(path);
+            return true;
+        }
+        catch (IOException ex)
+        {
+            ShowError(ex.Message, "Unable to remove file");
+            return false;
+        }
+    }
 
     private void Start(string target)
     {

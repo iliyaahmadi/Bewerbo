@@ -46,23 +46,46 @@ public class MainWindowTests
         Assert.Equal(4, main.Cards.Count);
         Assert.Equal(3, main.Summary.Remaining);
         Assert.Equal(["All applications", "Ausbildung", "Job"], main.Categories.Select(c => c.Label));
-        Assert.Equal(["All", "Fachinformatiker für Systemintegration", "Backend Developer (.NET)"], main.PositionFilters.Select(p => p.Label));
-        Assert.True(main.HasPositionFilters);
+        Assert.Equal("Advanced filters…", main.SortOptions[^1].Label);
 
         main.Categories[2].Command.Execute(null);
         Render(window);
         Assert.Equal("Job", main.Title);
-        Assert.False(main.HasPositionFilters);
         Assert.Single(main.Cards);
 
         main.Cards[0].Status = ApplicationStatus.Offer;
         Render(window);
         Assert.Equal(ApplicationStatus.Offer, store.Load().Single(a => a.Type == "Job").Status);
 
+        // Advanced filters: picking the last sort entry keeps the sort order and opens the filters window.
         main.ClearFiltersCommand.Execute(null);
-        main.PositionFilters[1].Command.Execute(null);
+        var sort = main.Sort;
+        dialogs.OnFilters = filters =>
+        {
+            Assert.Equal(["Fachinformatiker für Systemintegration", "Backend Developer (.NET)"], filters.Positions.Select(p => p.Name));
+            var filtersWindow = new FiltersWindow(filters) { Owner = window };
+            filtersWindow.Show();
+            filters.Positions[0].IsSelected = true;
+            filters.AppliedFrom = "not a date";
+            Render(filtersWindow);
+            filters.ApplyCommand.Execute(null);
+            Assert.NotEmpty(filters.Error);
+            filters.AppliedFrom = "";
+            Snap(filtersWindow, Path.Combine(screenshots, "filters.png"));
+            filters.ApplyCommand.Execute(null);
+            Assert.False(filtersWindow.IsVisible);
+        };
+        main.Sort = main.SortOptions[^1];
+        Assert.Same(sort, main.Sort);
         Render(window);
+        Assert.True(main.HasAdvancedFilters);
+        Assert.Equal("1 filter", main.AdvancedFiltersLabel);
+        Assert.Equal("Fachinformatiker für Systemintegration", main.Title);
         Assert.Equal(3, main.Cards.Count);
+        Snap(window, Path.Combine(screenshots, "main-filtered.png"));
+        main.ClearAdvancedCommand.Execute(null);
+        Assert.False(main.HasAdvancedFilters);
+        Assert.Equal(4, main.Cards.Count);
 
         main.ClearFiltersCommand.Execute(null);
         main.AddCommand.Execute(null);
@@ -132,7 +155,7 @@ public class MainWindowTests
 
         Assert.False(ThemeManager.IsDark);
         Assert.Equal(AppTheme.Light, settingsStore.Load().Theme);
-        Assert.True(main.HasDocumentsFolder);
+        Assert.Equal(documents, main.DocumentsFolder);
         var imported = store.Load().Single(a => a.Company == "Altes Werk");
         Assert.Equal(existing, imported.Folder);
         Assert.Equal(new DateOnly(2026, 9, 14), imported.AppliedOn);
@@ -146,8 +169,10 @@ public class MainWindowTests
         newEditor.Paste("Company: Neue Firma\nPosition: Fachinformatiker für Systemintegration\nType: Werkstudent");
         Assert.True(newEditor.HasNewFolderNote);
         Assert.Equal(["Ausbildung", "Job"], newEditor.TypeSuggestions.Select(t => t.Name));
-        newEditor.Documents!.Add([ownCv]);
-        Assert.True(Assert.Single(newEditor.Documents.Files).IsNew);
+        Assert.Equal(["Lebenslauf.pdf", "Zeugnisse.pdf"], newEditor.Documents!.Files.Select(f => f.Name));
+        newEditor.Documents.Add([ownCv]);
+        newEditor.Documents.Files.Single(f => f.Name == "Lebenslauf.pdf").RemoveCommand.Execute(null);
+        Assert.Equal(["Zeugnisse.pdf", "CV_Neue_Firma.pdf"], newEditor.Documents.Files.Select(f => f.Name));
         var newEditorWindow = new EditorWindow(newEditor) { Owner = window };
         newEditorWindow.Show();
         Render(newEditorWindow);
@@ -164,16 +189,31 @@ public class MainWindowTests
         main.Cards.Single(c => c.Company == "Neue Firma").AddFiles([letter]);
         Assert.True(File.Exists(Path.Combine(newFolder, "Anschreiben.pdf")));
         Assert.True(File.Exists(letter));
-        var card = main.Cards.Single(c => c.Company == "Neue Firma");
-        Assert.All(card.Documents, document => Assert.True(document.IsPresent));
-        Assert.Equal("3 files", card.FileCountText);
+        Assert.Equal("3 files", main.Cards.Single(c => c.Company == "Neue Firma").FilesText);
 
-        // An application without a folder gets one when its folder is opened.
+        // The files window opens, adds and removes files of an application that has no folder yet.
         var unlinked = main.Cards.Single(c => c.Company == "Grünwerk");
-        Assert.Equal("No folder yet", unlinked.FileCountText);
-        unlinked.OpenFolderCommand.Execute(null);
-        Assert.Equal(Path.Combine(documents, "Grünwerk"), dialogs.Opened.Last());
-        Assert.Equal(Path.Combine(documents, "Grünwerk"), store.Load().Single(a => a.Company == "Grünwerk").Folder);
+        Assert.Equal("No files", unlinked.FilesText);
+        var unlinkedFolder = Path.Combine(documents, "Grünwerk");
+        dialogs.OnFiles = files =>
+        {
+            Assert.True(files.Documents.IsEmpty);
+            files.Documents.Add([letter]);
+            Assert.Equal(["Anschreiben.pdf", "Lebenslauf.pdf", "Zeugnisse.pdf"], files.Documents.Files.Select(f => f.Name));
+            files.Documents.Files.Single(f => f.Name == "Lebenslauf.pdf").RemoveCommand.Execute(null);
+            Assert.False(File.Exists(Path.Combine(unlinkedFolder, "Lebenslauf.pdf")));
+            files.Documents.OpenFolderCommand.Execute(null);
+
+            var filesWindow = new FilesWindow(files) { Owner = window };
+            filesWindow.Show();
+            Render(filesWindow);
+            Snap(filesWindow, Path.Combine(screenshots, "files-light.png"));
+            filesWindow.Close();
+        };
+        unlinked.FilesCommand.Execute(null);
+        Assert.Equal(unlinkedFolder, dialogs.Opened.Last());
+        Assert.Equal(unlinkedFolder, store.Load().Single(a => a.Company == "Grünwerk").Folder);
+        Assert.Equal("2 files", main.Cards.Single(c => c.Company == "Grünwerk").FilesText);
 
         main.Edit(store.Load().Single(a => a.Company == "Neue Firma"));
         var documentsEditor = Assert.IsType<EditorViewModel>(dialogs.LastEditor);

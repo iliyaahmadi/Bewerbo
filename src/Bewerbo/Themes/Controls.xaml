@@ -164,18 +164,25 @@
         <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="Padding" Value="11,9" />
+        <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ComboBoxItem">
-                    <Border x:Name="ItemBox" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}" Margin="2">
-                        <ContentPresenter ContentSource="Content" />
-                    </Border>
+                    <Grid Margin="2">
+                        <Border x:Name="ItemBox" Background="{TemplateBinding Background}" CornerRadius="6" />
+                        <!-- Hover tint on top, so a hovered item stands out from the list and from the selected item. -->
+                        <Border x:Name="HoverTint" Background="{TemplateBinding Foreground}" CornerRadius="6" Opacity="0" IsHitTestVisible="False" />
+                        <ContentPresenter Margin="{TemplateBinding Padding}" ContentSource="Content" />
+                    </Grid>
                     <ControlTemplate.Triggers>
-                        <Trigger Property="IsHighlighted" Value="True">
-                            <Setter TargetName="ItemBox" Property="Background" Value="{DynamicResource ControlBrush}" />
-                        </Trigger>
                         <Trigger Property="IsSelected" Value="True">
                             <Setter TargetName="ItemBox" Property="Background" Value="{DynamicResource ControlHoverBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="HoverTint" Property="Opacity" Value="0.09" />
+                        </Trigger>
+                        <Trigger Property="IsHighlighted" Value="True">
+                            <Setter TargetName="HoverTint" Property="Opacity" Value="0.09" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -191,27 +198,48 @@
         <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
         <Setter Property="FontSize" Value="14" />
         <Setter Property="MaxDropDownHeight" Value="310" />
+        <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ComboBox">
                     <Grid x:Name="ComboRoot">
                         <Border x:Name="ComboBoxBorder" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="1" CornerRadius="8" />
+                        <!-- Lightens or darkens any background colour, so status-coloured dropdowns get a hover effect too. -->
+                        <Border x:Name="HoverOverlay" CornerRadius="8" Background="{TemplateBinding Foreground}" Opacity="0" IsHitTestVisible="False" />
                         <ContentPresenter Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                          ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                          ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}"
                                           VerticalAlignment="Center" Margin="12,0,42,0" IsHitTestVisible="False" />
                         <ToggleButton Focusable="False" ClickMode="Press" HorizontalAlignment="Stretch" Background="Transparent" BorderThickness="0"
                                       IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
                             <ToggleButton.Template>
                                 <ControlTemplate TargetType="ToggleButton">
                                     <Border Background="Transparent">
-                                        <TextBlock Text="⌄" Foreground="{DynamicResource TextMutedBrush}" FontSize="17"
-                                                   HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,-3,14,0" />
+                                        <Path x:Name="Chevron" Data="M 0,0 L 5,5 L 10,0" Width="10" Height="5" Stretch="None"
+                                              Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ComboBox}}" StrokeThickness="1.6"
+                                              StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" Opacity="0.65"
+                                              HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,15,0"
+                                              RenderTransformOrigin="0.5,0.5" SnapsToDevicePixels="False">
+                                            <Path.RenderTransform>
+                                                <RotateTransform Angle="0" />
+                                            </Path.RenderTransform>
+                                        </Path>
                                     </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsChecked" Value="True">
+                                            <Setter TargetName="Chevron" Property="RenderTransform">
+                                                <Setter.Value>
+                                                    <RotateTransform Angle="180" />
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
                                 </ControlTemplate>
                             </ToggleButton.Template>
                         </ToggleButton>
                         <Popup x:Name="PART_Popup" Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}" AllowsTransparency="True"
-                               Focusable="False" PopupAnimation="Fade">
+                               Focusable="False" PopupAnimation="None">
                             <Border MinWidth="{Binding ActualWidth, ElementName=ComboRoot}" Background="{DynamicResource ControlBrush}"
                                     BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="5" Margin="0,5,0,0">
                                 <ScrollViewer CanContentScroll="True" VerticalScrollBarVisibility="Auto" MaxHeight="{TemplateBinding MaxDropDownHeight}">
@@ -223,6 +251,7 @@
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="ComboBoxBorder" Property="BorderBrush" Value="{DynamicResource ControlHoverBorderBrush}" />
+                            <Setter TargetName="HoverOverlay" Property="Opacity" Value="0.1" />
                         </Trigger>
                         <Trigger Property="IsDropDownOpen" Value="True">
                             <Setter TargetName="ComboBoxBorder" Property="BorderBrush" Value="{DynamicResource AccentLightBrush}" />
@@ -374,17 +403,6 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
-    </Style>
-
-    <!-- A small pill on the card that says whether a document is in the company folder. -->
-    <Style x:Key="DocumentChip" TargetType="Border">
-        <Setter Property="CornerRadius" Value="4" />
-        <Setter Property="Padding" Value="7,3" />
-        <Setter Property="Margin" Value="0,0,6,0" />
-        <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
-        <Setter Property="TextElement.Foreground" Value="{DynamicResource TextMutedBrush}" />
-        <Setter Property="TextElement.FontSize" Value="10" />
     </Style>
 
 </ResourceDictionary>

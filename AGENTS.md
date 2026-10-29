@@ -24,14 +24,15 @@ dotnet publish src/Bewerbo -p:PublishProfile=win-x64   # single-file exe in .\pu
 | `src/Bewerbo.Core/JobApplication.cs` | The model. Dates are `DateOnly?`, timestamps are UTC `DateTime`. |
 | `src/Bewerbo.Core/ApplicationDraft.cs` | Editor form state: validation and building a `JobApplication`. |
 | `src/Bewerbo.Core/ApplicationQuery.cs` | `ApplicationFilter` and sorting. |
-| `src/Bewerbo.Core/Positions.cs` | `Labels`: grouping of free-text positions and types (case and whitespace insensitive), type tag colours. |
+| `src/Bewerbo.Core/AdvancedFilter.cs` | Criteria from the Advanced filters window: positions, date range, location, follow-ups due. |
+| `src/Bewerbo.Core/Labels.cs` | `Labels`: grouping of free-text positions and types (case and whitespace insensitive), type tag colours. |
 | `src/Bewerbo.Core/ApplicationSummary.cs` | Sidebar overview numbers. |
 | `src/Bewerbo.Core/DetailsParser.cs` | "Field: value" parser behind Paste details and Ctrl+V, plus the prompt behind Copy prompt. |
 | `src/Bewerbo.Core/Settings.cs` | Theme and documents settings. |
-| `src/Bewerbo.Core/Documents/` | Company folders: naming, standard documents, copying files in, the document checklist, folder import. |
+| `src/Bewerbo.Core/Documents/` | Company folders: naming, standard documents, copying files in, folder import. |
 | `src/Bewerbo.Core/Storage/` | JSON format, atomic save with backup, import merge, settings file, data folder. |
 | `src/Bewerbo/ViewModels/` | Main, editor, card, settings, folder import and documents view models, small MVVM helpers. |
-| `src/Bewerbo/Views/` | `MainWindow`, `EditorWindow`, `SettingsWindow`, `FolderImportWindow`. Code-behind only for focus, keyboard, clipboard and drag and drop. |
+| `src/Bewerbo/Views/` | `MainWindow`, `EditorWindow`, `SettingsWindow`, `FolderImportWindow`, `FilesWindow`, `FiltersWindow`. Code-behind only for focus, keyboard, clipboard and drag and drop. |
 | `src/Bewerbo/Services/` | Dialogs, favicon cache, clipboard, theme switching and the title bar colour. |
 | `src/Bewerbo/Themes/` | `Dark.xaml` and `Light.xaml` (the two palettes, same keys) and `Controls.xaml` (all styles). |
 
@@ -55,25 +56,27 @@ existing files readable.
 - On first start, `DataFolder.CopyLegacyData` copies data from the old `%LOCALAPPDATA%\ApplyTracker` folder.
   It never deletes or changes the old folder.
 - If the format ever has to change, bump `ApplicationStore.FormatVersion` and add a migration with tests.
-- Settings live next to it in `settings.json`, including the document checklist. A missing or damaged settings
-  file falls back to the defaults.
+- Settings live next to it in `settings.json`. A missing or damaged settings file falls back to the defaults.
 
 ## Documents (do not break)
 
-The documents folder holds the user's real application documents. Bewerbo may create folders and copy files
-into them, nothing else.
+The documents folder holds the user's real application documents.
 
-- Never delete, move, rename or overwrite a file in a documents folder. `DocumentLibrary.AddFiles` picks a free
-  name such as `Anschreiben (2).pdf` instead.
+- Never overwrite, move or rename a file. `DocumentLibrary.AddFiles` picks a free name such as
+  `CV (2).pdf`, and skips a file that is already there with the same content.
+- A file is only removed when the user clicks Remove and confirms, and it goes to the Recycle Bin
+  (`RecycleBin.MoveFile`). Nothing else deletes files.
 - `DocumentLibrary.Prepare` copies the standard documents only into a folder it has just created. A folder that
-  already exists is linked as it is. A standard document is skipped when the user's own files already cover
-  every checklist item it matches (their own CV replaces the standard CV).
-- Files added in the editor are copied when the application is saved, so Cancel never touches the folder.
-  Files dropped on a card are copied straight away.
-- An application without a `Folder` uses `<documents folder>\<company>`. Opening its folder, dropping files on
-  it or saving a new application links the folder by storing its path.
-- The checklist (`DocumentChecklist`) is user-editable: one "Name: keyword, keyword" line per document. A file
-  matches when a word in its name starts with a keyword. Recognition works on file names only and never opens files.
+  already exists is linked as it is.
+- For a new application, the form lists the standard documents and the user's own files as pending; they are
+  copied when it is saved, so Cancel never touches the disk. For an existing application, adding and removing in
+  the files list act straight away.
+- The documents folder is `Settings.DocumentsFolder`, or `Documents\Bewerbo` when it is empty, so files are
+  always available. Nothing is created there until the user adds a file or opens a folder.
+- An application without a `Folder` uses `<documents folder>\<company>`. Adding files to it, opening its folder
+  or saving a new application with files links the folder by storing its path.
+- `MainViewModel` caches folder listings so filtering never reads the disk. The cache is cleared when the main
+  window is activated and for a folder whose files the app changed.
 
 ## Behaviour worth knowing
 
@@ -85,6 +88,7 @@ into them, nothing else.
   `https://www.google.com/s2/favicons?sz=64&domain=<host>` and are cached in `icons\<host>.png`.
   When no icon can be loaded, the card shows the company initials.
 - Only one instance can run at a time (named mutex `Local\Bewerbo`).
+- The card list is virtualized and updated in place (`SyncCards`): unchanged cards are kept.
 - `InputBehavior` stops closed dropdowns from changing their value on the mouse wheel and clears focus when
   empty space is clicked. Focus rings only show for keyboard navigation (`FocusRing` style).
 - The theme follows Windows by default and switches live when the Windows setting changes.
