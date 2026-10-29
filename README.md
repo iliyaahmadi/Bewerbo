@@ -50,8 +50,19 @@ computer in a single JSON file. There is no account and no server.
 
 ## Download
 
-Get `Bewerbo-<version>-win-x64.zip` from [Releases](../../releases), unzip it and run `Bewerbo.exe`.
-It is a single self-contained file for 64-bit Windows 10 and 11, so no .NET installation is needed.
+Download `Bewerbo.exe` from the latest [release](../../releases/latest) and run it. It is a single
+self-contained file for 64-bit Windows 10 and 11, so nothing else needs to be installed. Windows may show a
+SmartScreen warning because the app is not code-signed: click **More info**, then **Run anyway**.
+Your applications are stored separately, so you can replace the exe with a newer version at any time.
+
+## Releasing
+
+Push a version tag and the Release workflow tests, publishes and attaches `Bewerbo.exe` to a GitHub release:
+
+```powershell
+git tag v1.0.1
+git push origin v1.0.1
+```
 
 ## Build from source
 
