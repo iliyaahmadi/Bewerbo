@@ -1,8 +1,11 @@
-<p align="center"><img src="docs/logo.png" width="96" alt="Bewerbo logo"></p>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/header-dark.png">
+    <img src="docs/header-light.png" width="300" alt="Bewerbo">
+  </picture>
+</p>
 
 <p align="center"><b>English</b> · <a href="README.de.md">Deutsch</a> · <a href="README.fa.md">فارسی</a></p>
-
-# Bewerbo
 
 A small Windows app for keeping track of job and Ausbildung applications.
 

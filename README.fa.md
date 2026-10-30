@@ -1,10 +1,13 @@
-<p align="center"><img src="docs/logo.png" width="96" alt="لوگوی Bewerbo"></p>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/header-dark.png">
+    <img src="docs/header-light.png" width="300" alt="Bewerbo">
+  </picture>
+</p>
 
 <p align="center"><a href="README.md">English</a> · <a href="README.de.md">Deutsch</a> · <b>فارسی</b></p>
 
 <div dir="rtl">
-
-# Bewerbo
 
 یک برنامه‌ی کوچک ویندوزی برای پیگیری درخواست‌های کار و آوسبیلدونگ (Ausbildung).
 

@@ -33,8 +33,9 @@ dotnet publish src/Bewerbo -p:PublishProfile=win-x64   # single-file exe in .\pu
 | `src/Bewerbo.Core/Storage/` | JSON format, atomic save with backup, import merge, settings file, data folder. |
 | `src/Bewerbo/ViewModels/` | Main, editor, card, settings, folder import and documents view models, small MVVM helpers. |
 | `src/Bewerbo/Views/` | `MainWindow`, `EditorWindow`, `SettingsWindow`, `FolderImportWindow`, `FilesWindow`, `FiltersWindow`. Code-behind only for focus, keyboard, clipboard and drag and drop. |
-| `src/Bewerbo/Services/` | Dialogs, favicon cache, clipboard, theme switching and the title bar colour. |
-| `src/Bewerbo/Themes/` | `Dark.xaml` and `Light.xaml` (the two palettes, same keys) and `Controls.xaml` (all styles). |
+| `src/Bewerbo/Services/` | Dialogs, favicon cache, clipboard, theme switching, and `WindowFrame` (title bar buttons, maximized padding). |
+| `src/Bewerbo/Themes/` | `Dark.xaml` and `Light.xaml` (the two palettes, same keys, including the `HeaderLogo` image) and `Controls.xaml` (all styles). |
+| `src/Bewerbo/Assets/` | App icon and the sidebar logo for each theme. The README logos are in `docs/`. |
 
 Business rules belong in `Bewerbo.Core` with a unit test. View models only translate between the core and the
 views. Do not add NuGet packages to the app or the core library without a strong reason.
@@ -79,6 +80,9 @@ The documents folder holds the user's real application documents.
   window is activated and for a folder whose files the app changed.
 
 ## Behaviour worth knowing
+
+- Every window uses the `AppWindow` style: a `WindowChrome` title bar in the theme's colours with only the
+  window buttons. A new window needs `Style="{StaticResource AppWindow}"` and `ThemeManager.Attach(this)`.
 
 - "Remaining" in the overview means every application that is not Rejected or Withdrawn.
 - A follow-up is due when its date is today or earlier and the status is not Rejected, Withdrawn or Accepted.

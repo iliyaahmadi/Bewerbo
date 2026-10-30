@@ -1,8 +1,11 @@
-<p align="center"><img src="docs/logo.png" width="96" alt="Bewerbo-Logo"></p>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/header-dark.png">
+    <img src="docs/header-light.png" width="300" alt="Bewerbo">
+  </picture>
+</p>
 
 <p align="center"><a href="README.md">English</a> · <b>Deutsch</b> · <a href="README.fa.md">فارسی</a></p>
-
-# Bewerbo
 
 Eine kleine Windows-App, um den Überblick über Bewerbungen für Jobs und Ausbildungen zu behalten.
 

@@ -11,6 +11,8 @@
 
   <ItemGroup>
     <Resource Include="Assets\Bewerbo.ico" />
+    <Resource Include="Assets\header-dark.png" />
+    <Resource Include="Assets\header-light.png" />
   </ItemGroup>
 
   <ItemGroup>

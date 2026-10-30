@@ -12,7 +12,8 @@
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource WindowBrush}"
         Foreground="{DynamicResource TextBrush}"
-        FontFamily="Segoe UI">
+        FontFamily="Segoe UI"
+        Style="{StaticResource AppWindow}">
 
     <Window.InputBindings>
         <KeyBinding Gesture="Ctrl+N" Command="{Binding AddCommand}" />
@@ -157,7 +158,7 @@
 
         <!-- Sidebar -->
         <Border Background="{DynamicResource SidebarBrush}" BorderBrush="{DynamicResource SubtleBorderBrush}" BorderThickness="0,0,1,0">
-            <Grid Margin="22,28,22,20">
+            <Grid Margin="22,10,22,20">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
@@ -166,7 +167,8 @@
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <TextBlock Text="Bewerbo" FontSize="24" FontWeight="SemiBold" Margin="9,0,0,0" />
+                <Image Source="{DynamicResource HeaderLogo}" Height="30" HorizontalAlignment="Left" Margin="9,0,0,0"
+                       RenderOptions.BitmapScalingMode="HighQuality" ToolTip="Bewerbo" />
 
                 <StackPanel Grid.Row="1" Margin="0,28,0,0">
                     <TextBlock Text="APPLICATIONS" Style="{StaticResource SectionLabel}" Margin="10,0,0,8" />
@@ -267,7 +269,7 @@
         </Border>
 
         <!-- Main area -->
-        <Grid Grid.Column="1" Margin="34,28,34,19">
+        <Grid Grid.Column="1" Margin="34,10,34,19">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />

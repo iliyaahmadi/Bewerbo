@@ -12,9 +12,10 @@
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
         Background="{DynamicResource SidebarBrush}"
         Foreground="{DynamicResource TextBrush}"
-        FontFamily="Segoe UI">
+        FontFamily="Segoe UI"
+        Style="{StaticResource AppWindow}">
 
-    <Grid Margin="28">
+    <Grid Margin="28,8,28,28">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />

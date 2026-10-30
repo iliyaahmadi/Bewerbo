@@ -34,6 +34,7 @@ public class MainWindowTests
         });
         ThemeManager.Apply(app, AppTheme.Dark);
         InputBehavior.Register();
+        WindowFrame.Register();
 
         var dialogs = new FakeDialogService();
         var window = new MainWindow();

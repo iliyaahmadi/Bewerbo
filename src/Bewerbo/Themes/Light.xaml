@@ -55,4 +55,7 @@
     <SolidColorBrush x:Key="StatusWithdrawnBrush" Color="#EBEBEB" />
     <SolidColorBrush x:Key="StatusWithdrawnTextBrush" Color="#767676" />
 
+
+    <!-- Logo for the top of the sidebar. -->
+    <BitmapImage x:Key="HeaderLogo" UriSource="pack://application:,,,/Bewerbo;component/Assets/header-light.png" />
 </ResourceDictionary>

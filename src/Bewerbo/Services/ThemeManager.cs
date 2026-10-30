@@ -14,6 +14,8 @@ public static partial class ThemeManager
 {
     private const int UseImmersiveDarkMode = 20;
     private const int UseImmersiveDarkModeBefore20H1 = 19;
+    private const int WindowCornerPreference = 33;
+    private const int RoundCorners = 2;
 
     private static readonly Uri DarkPalette = new("pack://application:,,,/Bewerbo;component/Themes/Dark.xaml");
     private static readonly Uri LightPalette = new("pack://application:,,,/Bewerbo;component/Themes/Light.xaml");
@@ -74,6 +76,10 @@ public static partial class ThemeManager
         var dark = IsDark ? 1 : 0;
         if (DwmSetWindowAttribute(handle, UseImmersiveDarkMode, ref dark, sizeof(int)) != 0)
             DwmSetWindowAttribute(handle, UseImmersiveDarkModeBefore20H1, ref dark, sizeof(int));
+
+        // Windows 11 does not round windows that draw their own title bar unless asked to. Older versions ignore this.
+        var corners = RoundCorners;
+        DwmSetWindowAttribute(handle, WindowCornerPreference, ref corners, sizeof(int));
     }
 
     private static bool SystemUsesDarkMode()
